@@ -2,7 +2,10 @@
 #![no_main]
 #![no_std]
 
-use aux5::{Delay, DelayMs, LedArray, OutputSwitch, entry, switch_hal::InputSwitch, stm32f3xx_hal::prelude::_embedded_hal_digital_InputPin};
+use aux5::{
+    entry, stm32f3xx_hal::{prelude::{_embedded_hal_digital_InputPin, _embedded_hal_adc_OneShot}, adc::{self, Adc}}, switch_hal::InputSwitch, Delay,
+    DelayMs, LedArray, OutputSwitch, pac::ADC3,
+};
 
 #[entry]
 fn main() -> ! {
@@ -12,41 +15,41 @@ fn main() -> ! {
     let mut delay = init_struct.delay;
     let button_a0 = init_struct.button_a0;
     let button_d3 = init_struct.pd3_pin;
-    let mut active = true;
-    let mut button_was_active = false;
+    let mut analog_input_d14 = init_struct.pd14_pin;
+    let mut adc3: Adc<ADC3> = init_struct.adc3;
 
-    let ms = 1000_u16;
     loop {
-        //for curr in 0..8 {
+        // let button_state = button_d3.is_high().unwrap();
 
-            // if active {
-            //     let next = (curr + 1) % 8;
+        // if button_state {
+        //     leds[5].on().ok();
+        // } else {
+        //     leds[5].off().ok();
+        // }
 
-            //     leds[next].on().ok();
-            //     leds[curr].off().ok();
-            // }
+        // let button_state = button_a0.is_active().unwrap();
 
-            //let button_state = button_a0.is_active().unwrap();
+        // if button_state {
+        //     leds[0].on().ok();
+        // } else {
+        //     leds[0].off().ok();
+        // }
 
-            let button_state = button_d3.is_high().unwrap();
+        let adc1_in1_data: u16 = adc3.read(&mut analog_input_d14).expect("Error reading adc3.");
+        let adc_val_32 = adc1_in1_data as f32;
 
-            if button_state  {
-                leds[5].on().ok();
+        let scaled = adc_val_32 / 4095_f32;
+
+        for curr in 0..8 {
+            let current = (curr as f32) / 8_f32;
+            if scaled >  current {
+                leds[curr].on().ok();
+            } else {
+                leds[curr].off().ok();
             }
-            else {
-                leds[5].off().ok();
-            }
-
-            let button_state = button_a0.is_active().unwrap();
-
-            if button_state  {
-                leds[0].on().ok();
-            }
-            else {
-                leds[0].off().ok();
-            }
-
-            delay.delay_ms(10_u16);
         }
+
+        delay.delay_ms(10_u16);
+    }
     //}
 }
