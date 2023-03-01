@@ -7,15 +7,10 @@ openocd -f interface/stlink-v2-1.cfg -f target/stm32f3x.cfg
 run
 
 ````
-cargo run --target thumbv7em-none-eabihf
+cargo run
 ````
 
-Then
- 
-````
-target remote :3333
-load
-continue
-````
+If needed change gdb init sequence in ``openocd.gdb``.
+
 
 [See Rust embedded book](https://docs.rust-embedded.org/discovery/f3discovery/)
