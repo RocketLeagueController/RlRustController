@@ -34,3 +34,5 @@ continue
 
 # Step from the trampoline code in entry into main
 step
+
+continue
