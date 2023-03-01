@@ -17,3 +17,5 @@ target remote :3333
 load
 continue
 ````
+
+[See Rust embedded book](https://docs.rust-embedded.org/discovery/f3discovery/)
