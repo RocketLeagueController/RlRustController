@@ -3,6 +3,7 @@
 #![no_std]
 
 use cortex_m::asm::delay;
+use cortex_m::iprintln;
 use cortex_m_rt::entry;
 use panic_halt as _;
 use stm32f3xx_hal::gpio::{Alternate, Gpioa, Input, Output, Pin, PushPull, U};
@@ -15,6 +16,7 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 #[entry]
 fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
+    let cp = cortex_m::peripheral::Peripherals::take();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
@@ -30,12 +32,51 @@ fn main() -> ! {
 
     // Configure the on-board LED (PC13, green)
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-    let mut led = gpioc
-        .pc13
-        .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper);
-    led.set_high(); // Turn off
-
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
+    let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
+
+    let mut led0 = gpioe
+        .pe8
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led1 = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led2 = gpioe
+        .pe10
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led3 = gpioe
+        .pe11
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led4 = gpioe
+        .pe12
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led5 = gpioe
+        .pe13
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led6 = gpioe
+        .pe14
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    let mut led7 = gpioe
+        .pe15
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+
+    led0.set_high(); // Turn off
+
+    led2.set_high();
+
+    led4.set_high();
+
+    let mut itm = cp.unwrap().ITM;
+
+    iprintln!(&mut itm.stim[0], "Start!");
 
     // BluePill board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
@@ -73,9 +114,6 @@ fn main() -> ! {
         .device_class(USB_CLASS_CDC)
         .build();
 
-    //let mut gpioa = gpioa.split(&mut rcc.ahb);
-    let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
-
     let pd3_pin = gpiod
         .pd3
         .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
@@ -84,21 +122,6 @@ fn main() -> ! {
 
     let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
 
-    // initialize user leds
-    let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
-
-    // let leds = Leds::new(
-    //     gpioe.pe8,
-    //     gpioe.pe9,
-    //     gpioe.pe10,
-    //     gpioe.pe11,
-    //     gpioe.pe12,
-    //     gpioe.pe13,
-    //     gpioe.pe14,
-    //     gpioe.pe15,
-    //     &mut gpioe.moder,
-    //     &mut gpioe.otyper,
-    // );
 
     // let mut adc3 = adc::Adc::adc3(
     //     device_periphs.ADC3, // The ADC we are going to control
@@ -119,7 +142,7 @@ fn main() -> ! {
 
         match serial.read(&mut buf) {
             Ok(count) if count > 0 => {
-                led.set_low(); // Turn on
+                led1.set_low(); // Turn on
 
                 // Echo back in upper case
                 for c in buf[0..count].iter_mut() {
@@ -141,6 +164,6 @@ fn main() -> ! {
             _ => {}
         }
 
-        led.set_high(); // Turn off
+        led0.set_low(); // Turn off
     }
 }
