@@ -48,30 +48,30 @@ fn main() -> ! {
     usb_dp.set_low();
     delay(clocks.sysclk().0 / 100);
 
-    // let dm_pin: Pin<Gpioa, U<11>, Alternate<PushPull, 14>> =
-    //     gpioa
-    //         .pa11
-    //         .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let dm_pin: Pin<Gpioa, U<11>, Alternate<PushPull, 14>> =
+        gpioa
+            .pa11
+            .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
-    // let dp_pin: Pin<Gpioa, U<12>, Alternate<PushPull, 14>> =
-    //     usb_dp.into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let dp_pin: Pin<Gpioa, U<12>, Alternate<PushPull, 14>> =
+        usb_dp.into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
-    // let usb = Peripheral {
-    //     usb: dp.USB,
-    //     pin_dm: dm_pin,
-    //     pin_dp: dp_pin,
-    // };
+    let usb = Peripheral {
+        usb: dp.USB,
+        pin_dm: dm_pin,
+        pin_dp: dp_pin,
+    };
 
-    // let usb_bus = UsbBus::new(usb);
+    let usb_bus = UsbBus::new(usb);
 
-    // let mut serial = SerialPort::new(&usb_bus);
+    let mut serial = SerialPort::new(&usb_bus);
 
-    // let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
-    //     .manufacturer("Fake company")
-    //     .product("Serial port")
-    //     .serial_number("TEST")
-    //     .device_class(USB_CLASS_CDC)
-    //     .build();
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+        .manufacturer("Fake company")
+        .product("Serial port")
+        .serial_number("TEST")
+        .device_class(USB_CLASS_CDC)
+        .build();
 
     //let mut gpioa = gpioa.split(&mut rcc.ahb);
     let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
@@ -110,42 +110,37 @@ fn main() -> ! {
     //     clocks,
     // );
 
-    // loop {
-    //     if !usb_dev.poll(&mut [&mut serial]) {
-    //         continue;
-    //     }
+    loop {
+        if !usb_dev.poll(&mut [&mut serial]) {
+            continue;
+        }
 
-    //     let mut buf = [0u8; 64];
+        let mut buf = [0u8; 64];
 
-    //     match serial.read(&mut buf) {
-    //         Ok(count) if count > 0 => {
-    //             led.set_low(); // Turn on
+        match serial.read(&mut buf) {
+            Ok(count) if count > 0 => {
+                led.set_low(); // Turn on
 
-    //             // Echo back in upper case
-    //             for c in buf[0..count].iter_mut() {
-    //                 if 0x61 <= *c && *c <= 0x7a {
-    //                     *c &= !0x20;
-    //                 }
-    //             }
+                // Echo back in upper case
+                for c in buf[0..count].iter_mut() {
+                    if 0x61 <= *c && *c <= 0x7a {
+                        *c &= !0x20;
+                    }
+                }
 
-    //             let mut write_offset = 0;
-    //             while write_offset < count {
-    //                 match serial.write(&buf[write_offset..count]) {
-    //                     Ok(len) if len > 0 => {
-    //                         write_offset += len;
-    //                     }
-    //                     _ => {}
-    //                 }
-    //             }
-    //         }
-    //         _ => {}
-    //     }
+                let mut write_offset = 0;
+                while write_offset < count {
+                    match serial.write(&buf[write_offset..count]) {
+                        Ok(len) if len > 0 => {
+                            write_offset += len;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
 
         led.set_high(); // Turn off
-    //}
-    //}
-
-    loop {
-        
     }
 }
