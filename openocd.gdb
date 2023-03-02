@@ -21,10 +21,10 @@ monitor tpiu config internal itm.txt uart off 8000000
 monitor itm port 0 on
 
 # Set a breakpoint at main, aka entry
-break main
+# break main
 
 # Set a breakpoint at DefaultHandler
-break DefaultHandler
+# break DefaultHandler
 
 # Set a breakpoint at HardFault
 break HardFault
@@ -33,6 +33,6 @@ break HardFault
 continue
 
 # Step from the trampoline code in entry into main
-step
+# step
 
-continue
+# continue
