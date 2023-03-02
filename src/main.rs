@@ -135,6 +135,7 @@ fn main() -> ! {
 
     loop {
         if !usb_dev.poll(&mut [&mut serial]) {
+            led0.set_low();
             continue;
         }
 
@@ -142,7 +143,7 @@ fn main() -> ! {
 
         match serial.read(&mut buf) {
             Ok(count) if count > 0 => {
-                led1.set_low(); // Turn on
+                led6.set_low(); // Turn on
 
                 // Echo back in upper case
                 for c in buf[0..count].iter_mut() {
@@ -164,6 +165,6 @@ fn main() -> ! {
             _ => {}
         }
 
-        led0.set_low(); // Turn off
+        led1.set_high(); // Turn off
     }
 }
