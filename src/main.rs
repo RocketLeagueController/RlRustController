@@ -2,6 +2,7 @@
 #![no_main]
 #![no_std]
 
+use controller::ControllerState;
 pub use panic_itm; // panic handler
 
 pub use cortex_m_rt::entry;
@@ -10,23 +11,12 @@ use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_adc_
 
 use source::leds::Leds;
 use stm32_usbd::UsbBus;
-use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay, time::rate::Megahertz};
+use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin, _embedded_hal_blocking_delay_DelayUs}, rcc::RccExt, usb::Peripheral, adc, delay::Delay, time::rate::Megahertz};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-// use stm32f3_discovery::{
-//     button::UserButton,
-//     stm32f3xx_hal::{gpio::{
-//         marker::{Gpio, Index},
-//         Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
-//     }, adc::Adc, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc}, leds::Leds, switch_hal::OutputSwitch,
-// };
-
 use source::switch_hal::OutputSwitch;
-
-// use stm32f3xx_hal::{
-//     prelude::*,
-// };
+mod controller;
 
 #[entry]
 fn main() -> ! {
@@ -127,31 +117,40 @@ fn main() -> ! {
         .build();
 
     leds[0].off().ok();
+
+    let mut controller_state = ControllerState::new();
+
+    let mut nb_iter = 0u64;
     
     loop {
-        let button_state = button_d3.is_high().unwrap();
+        nb_iter += 1;
+        // TODO : use clock
 
-        if button_state {
-            leds[5].on().ok();
+        if nb_iter % 1000 == 0 {
+            let button_state = button_d3.is_high().unwrap();
 
-            if serial.write("hello world\r\n".as_bytes()).is_ok()
-            {
-                leds[1].on().ok();
-            } 
-            else {
-                leds[1].off().ok();
+            if button_state {
+                controller_state.a = true;
+
+                let to_send = controller_state.to_string();
+                _ = serial.write(to_send.as_bytes());
+                _ = serial.flush().is_ok();
+
+                leds[5].on().ok();
+
+                delay.delay_us(100u32);
+
+            } else {
+                controller_state.a = false;
+
+                let to_send = controller_state.to_string();
+                _ = serial.write(to_send.as_bytes());
+                _ = serial.flush().is_ok();
+
+                leds[5].off().ok();
+
+                delay.delay_us(100u32);
             }
-
-            if serial.flush().is_ok()
-            {
-                leds[2].on().ok();
-            } 
-            else {
-                leds[2].off().ok();
-            }
-
-        } else {
-            leds[5].off().ok();
         }
 
         let adc1_in1_data: u16 = adc3.read(&mut analog_input_d14).expect("Error reading adc3.");

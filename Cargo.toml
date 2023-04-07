@@ -23,3 +23,5 @@ panic-itm = "0.4.2"
 switch-hal = "0.4.0"
 lsm303dlhc = "0.2.0"
 accelerometer = "0.12.0"
+
+heapless = "0.7.16"
