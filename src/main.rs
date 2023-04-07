@@ -127,6 +127,23 @@ fn main() -> ! {
 
         if button_state {
             leds[5].on().ok();
+
+            if serial.write("hello world\r\n".as_bytes()).is_ok()
+            {
+                leds[1].on().ok();
+            } 
+            else {
+                leds[1].off().ok();
+            }
+
+            if serial.flush().is_ok()
+            {
+                leds[2].on().ok();
+            } 
+            else {
+                leds[2].off().ok();
+            }
+
         } else {
             leds[5].off().ok();
         }
@@ -151,10 +168,6 @@ fn main() -> ! {
         }
         else {
             leds[0].on().ok();
-            //_ = serial.write("hello world".as_bytes());
         }
-
-        //delay.delay_ms(1_u16);
     }
-    //}
 }
