@@ -117,6 +117,8 @@ fn main() -> ! {
         .serial_number("TEST")
         .device_class(USB_CLASS_CDC)
         .build();
+
+    leds[0].off().ok();
     
     loop {
         let button_state = button_d3.is_high().unwrap();
@@ -142,11 +144,11 @@ fn main() -> ! {
         // }
 
         if !usb_dev.poll(&mut [&mut serial]) {
-            leds[0].on().ok();
+            // leds[0].on().ok();
             continue;
         }
         else {
-            leds[0].off().ok();
+            leds[0].on().ok();
             _ = serial.write("hello world".as_bytes());
         }
 
