@@ -8,18 +8,25 @@ pub use cortex_m_rt::entry;
 
 use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_adc_OneShot};
 
+use source::leds::Leds;
 use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay, time::rate::Megahertz};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-use stm32f3_discovery::{
-    button::UserButton,
-    stm32f3xx_hal::{gpio::{
-        marker::{Gpio, Index},
-        Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
-    }, adc::Adc, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc}, leds::Leds, switch_hal::OutputSwitch,
-};
+// use stm32f3_discovery::{
+//     button::UserButton,
+//     stm32f3xx_hal::{gpio::{
+//         marker::{Gpio, Index},
+//         Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
+//     }, adc::Adc, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc}, leds::Leds, switch_hal::OutputSwitch,
+// };
+
+use source::switch_hal::OutputSwitch;
+
+// use stm32f3xx_hal::{
+//     prelude::*,
+// };
 
 #[entry]
 fn main() -> ! {
@@ -28,7 +35,6 @@ fn main() -> ! {
 
     let core_periphs = cortex_m::Peripherals::take().unwrap();
     let mut flash = device_periphs.FLASH.constrain();
-    //let clocks = reset_and_clock_control.cfgr.freeze(&mut flash.acr);
 
     let clocks = reset_and_clock_control
         .cfgr
@@ -79,7 +85,7 @@ fn main() -> ! {
         // correctly.
         &mut device_periphs.ADC3_4,
         &mut reset_and_clock_control.ahb,
-        adc::CkMode::default(),
+        adc::ClockMode::default(),
         clocks,
     );
 

@@ -14,8 +14,12 @@ lto = true
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 stm32-usbd = "0.6.0"
-cortex-m = "0.7.2"
-cortex-m-rt = "0.6.14"
-stm32f3-discovery = "0.7.0"
-stm32f3xx-hal = { version = "0.7.0", features = ["stm32-usbd"] }
+cortex-m = "0.7.7"
+cortex-m-rt = "0.6.15"
+# stm32f3-discovery = "0.7.0"
+stm32f3xx-hal = { version = "0.8.2", features = ["stm32-usbd", "usb", "rt", "stm32f303xc"] }
 panic-itm = "0.4.2"
+
+switch-hal = "0.4.0"
+lsm303dlhc = "0.2.0"
+accelerometer = "0.12.0"
