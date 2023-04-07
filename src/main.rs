@@ -2,23 +2,33 @@
 #![no_main]
 #![no_std]
 
-use aux5::{
-    entry, stm32f3xx_hal::{prelude::{_embedded_hal_digital_InputPin, _embedded_hal_adc_OneShot, _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin}, adc::{self, Adc}, rcc::RccExt, self, usb::Peripheral}, switch_hal::InputSwitch, Delay,
-    DelayMs, LedArray, OutputSwitch, pac::{ADC3, self}, Leds,
-};
+pub use panic_itm; // panic handler
+
+pub use cortex_m_rt::entry;
+
+use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_adc_OneShot};
+// use aux5::{
+//     entry, stm32f3xx_hal::{prelude::{_embedded_hal_digital_InputPin, _embedded_hal_adc_OneShot, _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin}, adc::{self, Adc}, rcc::RccExt, self, usb::Peripheral}, switch_hal::InputSwitch, Delay,
+//     DelayMs, LedArray, OutputSwitch, pac::{ADC3, self}, Leds,
+// };
 use stm32_usbd::UsbBus;
+use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
+
+use stm32f3_discovery::{
+    button::UserButton,
+    stm32f3xx_hal::{gpio::{
+        marker::{Gpio, Index},
+        Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
+    }, adc::Adc, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc}, leds::Leds, switch_hal::OutputSwitch,
+};
 
 //use stm32f3xx_hal::usb::{Peripheral, UsbBus};
 
 
 #[entry]
 fn main() -> ! {
-    //let (mut delay, mut leds): (Delay, LedArray) = aux5::init();
-    //let init_struct = aux5::init();
-
-
     let mut device_periphs = pac::Peripherals::take().unwrap();
     let mut reset_and_clock_control = device_periphs.RCC.constrain();
 
@@ -45,7 +55,7 @@ fn main() -> ! {
     // initialize user leds
     let mut gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
 
-    let mut leds: LedArray = Leds::new(
+    let mut leds = Leds::new(
         gpioe.pe8,
         gpioe.pe9,
         gpioe.pe10,
@@ -87,7 +97,6 @@ fn main() -> ! {
 
     usb_dp.set_low().ok();
 
-    //delay.delay_ms(clocks.sysclk().0 / 100);
     delay.delay_ms(10_u16);
 
     let usb_dm = gpioa.pa11.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
@@ -104,7 +113,9 @@ fn main() -> ! {
     let mut serial = SerialPort::new(&usb_bus);
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+        .manufacturer("Fake company")
         .product("Serial port")
+        .serial_number("TEST")
         .device_class(USB_CLASS_CDC)
         .build();
     
