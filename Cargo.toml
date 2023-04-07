@@ -12,3 +12,8 @@ lto = true
 
 [dependencies]
 aux5 = { path = "auxiliary" }
+usb-device = "0.2.9"
+usbd-serial = "0.1.1"
+stm32-usbd = "0.6.0"
+cortex-m = "0.7.2"
+cortex-m-rt = "0.6.14"

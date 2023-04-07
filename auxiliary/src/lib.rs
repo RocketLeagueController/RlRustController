@@ -11,7 +11,7 @@ use stm32f3_discovery::{
     stm32f3xx_hal::{gpio::{
         marker::{Gpio, Index},
         Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
-    }, adc::{self, Adc}, pac::{ADC1, ADC3}},
+    }, adc::{self, Adc}, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc},
 };
 
 pub use stm32f3_discovery::{leds::Leds, stm32f3xx_hal, switch_hal};
@@ -29,6 +29,11 @@ pub use stm32f3xx_hal::{
 
 pub type LedArray = [Switch<gpioe::PEx<Output<PushPull>>, ActiveHigh>; 8];
 
+use usb_device::{prelude::{UsbDeviceBuilder, UsbVidPid}, class_prelude::UsbBusAllocator};
+use usbd_serial::{SerialPort, USB_CLASS_CDC};
+
+//use stm32f3xx_hal::usb::{Peripheral, UsbBus};
+
 pub struct InitStruct {
     pub delay: Delay,
     pub leds: LedArray,
@@ -36,6 +41,8 @@ pub struct InitStruct {
     pub pd3_pin: Pin<Gpiox, Ux, Input>,
     pub pd14_pin: Pin<Gpiod, U<14>, Analog>,
     pub adc3: Adc<ADC3>,
+    // pub reset_and_clock_control: Rcc,
+    // pub device_periphs: Peripherals,
     // buttons
 }
 
@@ -97,5 +104,7 @@ pub fn init() -> InitStruct {
         pd3_pin: pd3_pin,
         pd14_pin: pd14_pin,
         adc3: adc3,
+        // reset_and_clock_control,
+        // device_periphs,
     }
 }
