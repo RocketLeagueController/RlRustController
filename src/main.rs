@@ -9,7 +9,7 @@ pub use cortex_m_rt::entry;
 use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_adc_OneShot};
 
 use stm32_usbd::UsbBus;
-use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay};
+use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay, time::rate::Megahertz};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
@@ -28,7 +28,16 @@ fn main() -> ! {
 
     let core_periphs = cortex_m::Peripherals::take().unwrap();
     let mut flash = device_periphs.FLASH.constrain();
-    let clocks = reset_and_clock_control.cfgr.freeze(&mut flash.acr);
+    //let clocks = reset_and_clock_control.cfgr.freeze(&mut flash.acr);
+
+    let clocks = reset_and_clock_control
+        .cfgr
+        .use_hse(Megahertz::new(8))
+        .sysclk(Megahertz::new(48))
+        .pclk1(Megahertz::new(24))
+        .pclk2(Megahertz::new(24))
+        .freeze(&mut flash.acr);
+
     let mut delay = Delay::new(core_periphs.SYST, clocks);
 
     let mut gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
