@@ -38,6 +38,8 @@ fn main() -> ! {
         .pclk2(Megahertz::new(24))
         .freeze(&mut flash.acr);
 
+    assert!(clocks.usbclk_valid());
+
     let mut delay = Delay::new(core_periphs.SYST, clocks);
 
     let mut gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
@@ -149,10 +151,10 @@ fn main() -> ! {
         }
         else {
             leds[0].on().ok();
-            _ = serial.write("hello world".as_bytes());
+            //_ = serial.write("hello world".as_bytes());
         }
 
-        delay.delay_ms(1_u16);
+        //delay.delay_ms(1_u16);
     }
     //}
 }
