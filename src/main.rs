@@ -75,17 +75,20 @@ fn main() -> ! {
     let mut analog_input_d14 = pd14_pin;
     // let mut adc3: Adc<ADC3> = init_struct.adc3;
 
+    
     // F3 Discovery board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
     // will not reset your device when you upload new firmware.
+
     let mut usb_dp = gpioa
         .pa12
         .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
+
     usb_dp.set_low().ok();
 
-    // TODO
-    //delay(clocks.sysclk().0 / 100);
+    //delay.delay_ms(clocks.sysclk().0 / 100);
+    delay.delay_ms(10_u16);
 
     let usb_dm = gpioa.pa11.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
     let usb_dp = usb_dp.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
@@ -104,7 +107,7 @@ fn main() -> ! {
         .product("Serial port")
         .device_class(USB_CLASS_CDC)
         .build();
-
+    
     loop {
         let button_state = button_d3.is_high().unwrap();
 
@@ -136,7 +139,16 @@ fn main() -> ! {
         //     }
         // }
 
-        delay.delay_ms(10_u16);
+        if !usb_dev.poll(&mut [&mut serial]) {
+            leds[0].on().ok();
+            continue;
+        }
+        else {
+            leds[0].off().ok();
+            _ = serial.write("hello world".as_bytes());
+        }
+
+        delay.delay_ms(1_u16);
     }
     //}
 }
