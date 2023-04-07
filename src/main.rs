@@ -7,10 +7,7 @@ pub use panic_itm; // panic handler
 pub use cortex_m_rt::entry;
 
 use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_adc_OneShot};
-// use aux5::{
-//     entry, stm32f3xx_hal::{prelude::{_embedded_hal_digital_InputPin, _embedded_hal_adc_OneShot, _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin}, adc::{self, Adc}, rcc::RccExt, self, usb::Peripheral}, switch_hal::InputSwitch, Delay,
-//     DelayMs, LedArray, OutputSwitch, pac::{ADC3, self}, Leds,
-// };
+
 use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{pac, prelude::{_stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt, _embedded_hal_digital_OutputPin, _embedded_hal_digital_InputPin}, rcc::RccExt, usb::Peripheral, adc, delay::Delay};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
@@ -23,9 +20,6 @@ use stm32f3_discovery::{
         Analog, Gpioa, Gpiox, Input, Pin, Ux, U, Gpiod,
     }, adc::Adc, pac::{ADC1, ADC3, Peripherals}, rcc::Rcc}, leds::Leds, switch_hal::OutputSwitch,
 };
-
-//use stm32f3xx_hal::usb::{Peripheral, UsbBus};
-
 
 #[entry]
 fn main() -> ! {
@@ -78,12 +72,8 @@ fn main() -> ! {
         clocks,
     );
 
-    // let mut leds = init_struct.leds;
-    // let mut delay = init_struct.delay;
-    // //let button_a0 = init_struct.button_a0;
     let button_d3 = pd3_pin;
     let mut analog_input_d14 = pd14_pin;
-    // let mut adc3: Adc<ADC3> = init_struct.adc3;
 
     
     // F3 Discovery board has a pull-up resistor on the D+ line.
@@ -127,14 +117,6 @@ fn main() -> ! {
         } else {
             leds[5].off().ok();
         }
-
-        // let button_state = button_a0.is_active().unwrap();
-
-        // if button_state {
-        //     leds[0].on().ok();
-        // } else {
-        //     leds[0].off().ok();
-        // }
 
         let adc1_in1_data: u16 = adc3.read(&mut analog_input_d14).expect("Error reading adc3.");
         let adc_val_32 = adc1_in1_data as f32;
