@@ -2,8 +2,7 @@ use core::fmt::Write;
 
 use heapless::String;
 
-pub struct ControllerState
-{
+pub struct ControllerState {
     pub up: bool,
     pub down: bool,
     pub left: bool,
@@ -30,27 +29,27 @@ pub struct ControllerState
 impl ControllerState {
     pub fn new() -> ControllerState {
         ControllerState {
-            up:false,
-            down:false,
-            left:false,
-            right:false,
-            start:false,
-            back:false,
-            left_thumb:false,
-            right_thumb:false,
-            left_shoulder:false,
-            right_shoulder:false,
-            guide:false,
-            a:false,
-            b:false,
-            x:false,
-            y:false,
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            start: false,
+            back: false,
+            left_thumb: false,
+            right_thumb: false,
+            left_shoulder: false,
+            right_shoulder: false,
+            guide: false,
+            a: false,
+            b: false,
+            x: false,
+            y: false,
             left_thumb_x: 0.0f32,
-            left_thumb_y:0.0f32,
-            right_thumb_x:0.0f32,
-            right_thumb_y:0.0f32,
-            left_trigger:0.0f32,
-            right_trigger:0.0f32,
+            left_thumb_y: 0.0f32,
+            right_thumb_x: 0.0f32,
+            right_thumb_y: 0.0f32,
+            left_trigger: 0.0f32,
+            right_trigger: 0.0f32,
         }
     }
 
@@ -100,28 +99,22 @@ impl ControllerState {
         Self::add_number(&mut s, self.right_trigger);
         _ = s.push_str("\n");
 
-
         return s;
     }
 
-    fn add_bool(str: &mut String<300>, value: bool)
-    {
+    fn add_bool(str: &mut String<300>, value: bool) {
         if value {
             _ = str.push_str("1");
-        }
-        else {
+        } else {
             _ = str.push_str("0");
         }
     }
 
-    fn add_coma(str: &mut String<300>)
-    {
+    fn add_coma(str: &mut String<300>) {
         _ = str.push_str(",");
     }
 
-    fn add_number(str: &mut String<300>, value: f32)
-    {
+    fn add_number(str: &mut String<300>, value: f32) {
         _ = write!(str, "{value}");
     }
-
 }
