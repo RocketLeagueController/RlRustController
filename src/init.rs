@@ -93,15 +93,15 @@ pub fn get_usb_init(mut gpioa: gpioa::Parts, delay: &mut Delay, usb: USB) -> Usb
         gpioa
             .pa11
             .into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let usb_dp = usb_dp.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+
+    let usb_dp = 
+        usb_dp.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     let usb_periph = Peripheral {
         usb: usb,
         pin_dm: usb_dm,
         pin_dp: usb_dp,
     };
-
-    // usb::Peripheral<dyn DmPin, dyn DpPin>
 
     usb_periph
 }
