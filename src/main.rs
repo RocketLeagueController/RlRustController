@@ -12,16 +12,16 @@ use cortex_m::prelude::{_embedded_hal_adc_OneShot, _embedded_hal_blocking_delay_
 use source::leds::Leds;
 use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{
-    adc,
+    adc::{self, Adc},
     delay::Delay,
     flash::Parts,
-    pac::{self},
+    pac::{self, Peripherals, ADC3, ADC3_4},
     prelude::{
         _embedded_hal_blocking_delay_DelayUs, _embedded_hal_digital_InputPin,
         _embedded_hal_digital_OutputPin, _stm32f3xx_hal_flash_FlashExt,
         _stm32f3xx_hal_gpio_GpioExt,
     },
-    rcc::{Clocks, Rcc, RccExt, CFGR},
+    rcc::{Clocks, Rcc, RccExt, CFGR, AHB},
     time::rate::Megahertz,
     usb::Peripheral, gpio::{gpioe, Output, Ux, PushPull, self, Pin},
 };
@@ -49,6 +49,26 @@ fn get_leds(mut gpioe : gpioe::Parts) -> LedArray {
     .into_array();
 
     return leds;
+}
+
+struct Adc3Arg {
+    adc3: ADC3,
+    adc3_4: ADC3_4,
+    ahb: AHB,
+}
+
+fn get_adc(mut arg: Adc3Arg, clocks: Clocks) -> Adc<ADC3> {
+    let adc3 = adc::Adc::adc3(
+        arg.adc3, // The ADC we are going to control
+        // The following is only needed to make sure the clock signal for the ADC is set up
+        // correctly.
+        &mut arg.adc3_4,
+        &mut arg.ahb,
+        adc::ClockMode::default(),
+        clocks,
+    );
+
+    return adc3;
 }
 
 fn get_clocks(
@@ -102,15 +122,14 @@ fn main() -> ! {
         .pd14
         .into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
 
-    let mut adc3 = adc::Adc::adc3(
-        device_periphs.ADC3, // The ADC we are going to control
-        // The following is only needed to make sure the clock signal for the ADC is set up
-        // correctly.
-        &mut device_periphs.ADC3_4,
-        &mut reset_and_clock_control.ahb,
-        adc::ClockMode::default(),
-        clocks,
-    );
+
+    let mut adc3 = get_adc(
+        Adc3Arg {
+            adc3: device_periphs.ADC3,
+            adc3_4: device_periphs.ADC3_4,
+            ahb: reset_and_clock_control.ahb,
+        },
+        clocks);
 
     // F3 Discovery board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
@@ -187,7 +206,7 @@ fn main() -> ! {
         let adc1_in1_data: u16 = adc3
             .read(&mut pd14_pin)
             .expect("Error reading adc3.");
-        
+
         let adc_val_32 = adc1_in1_data as f32;
 
         let scaled = adc_val_32 / 4095_f32;
