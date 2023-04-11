@@ -11,21 +11,24 @@ use cortex_m::prelude::{_embedded_hal_adc_OneShot, _embedded_hal_blocking_delay_
 
 use source::leds::Leds;
 use stm32_usbd::UsbBus;
+
 use stm32f3xx_hal::{
     adc::{self, Adc},
     delay::Delay,
     flash::Parts,
-    pac::{self, Peripherals, ADC3, ADC3_4},
+    gpio::{self, gpioa, gpioe, Alternate, Output, Pin, PushPull, Ux, U},
+    pac::{self, ADC3, ADC3_4, USB},
     prelude::{
         _embedded_hal_blocking_delay_DelayUs, _embedded_hal_digital_InputPin,
         _embedded_hal_digital_OutputPin, _stm32f3xx_hal_flash_FlashExt,
         _stm32f3xx_hal_gpio_GpioExt,
     },
-    rcc::{Clocks, Rcc, RccExt, CFGR, AHB},
+    rcc::{Clocks, RccExt, AHB, CFGR},
     time::rate::Megahertz,
-    usb::Peripheral, gpio::{gpioe, Output, Ux, PushPull, self, Pin},
+    usb::Peripheral,
 };
-use switch_hal::{ActiveHigh, Switch, OutputSwitch};
+
+use switch_hal::{ActiveHigh, OutputSwitch, Switch};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
@@ -33,7 +36,12 @@ mod controller;
 
 type LedArray = [Switch<Pin<gpio::Gpioe, Ux, Output<PushPull>>, ActiveHigh>; 8];
 
-fn get_leds(mut gpioe : gpioe::Parts) -> LedArray {
+type UsbPeriph = Peripheral<
+    Pin<gpio::Gpioa, U<11>, Alternate<PushPull, 14>>,
+    Pin<gpio::Gpioa, U<12>, Alternate<PushPull, 14>>,
+>;
+
+fn get_leds(mut gpioe: gpioe::Parts) -> LedArray {
     let leds = Leds::new(
         gpioe.pe8,
         gpioe.pe9,
@@ -71,11 +79,7 @@ fn get_adc(mut arg: Adc3Arg, clocks: Clocks) -> Adc<ADC3> {
     return adc3;
 }
 
-fn get_clocks(
-    cfgr: CFGR,
-    flash : &mut Parts
-) -> Clocks {
-
+fn get_clocks(cfgr: CFGR, flash: &mut Parts) -> Clocks {
     let clocks = cfgr
         .use_hse(Megahertz::new(8))
         .sysclk(Megahertz::new(48))
@@ -88,49 +92,7 @@ fn get_clocks(
     return clocks;
 }
 
-#[entry]
-fn main() -> ! {
-    let mut device_periphs = pac::Peripherals::take().unwrap();
-
-    let core_periphs = cortex_m::Peripherals::take().unwrap();
-
-    let mut reset_and_clock_control = device_periphs.RCC.constrain();
-
-    let mut flash = device_periphs.FLASH.constrain();
-
-    let clocks = 
-        get_clocks(
-            reset_and_clock_control.cfgr,
-            &mut flash);
-
-    let mut delay = Delay::new(core_periphs.SYST, clocks);
-
-    let mut gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
-    let mut gpiod = device_periphs.GPIOD.split(&mut reset_and_clock_control.ahb);
-    let mut gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
-
-    let mut leds = get_leds(gpioe);
-
-    //let button_a0 = UserButton::new(gpioa.pa0, &mut gpioa.moder, &mut gpioa.pupdr);
-
-    let button_d3 = gpiod
-        .pd3
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
-
-    let mut pd14_pin = 
-        gpiod
-        .pd14
-        .into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
-
-
-    let mut adc3 = get_adc(
-        Adc3Arg {
-            adc3: device_periphs.ADC3,
-            adc3_4: device_periphs.ADC3_4,
-            ahb: reset_and_clock_control.ahb,
-        },
-        clocks);
-
+fn get_usb_init(mut gpioa: gpioa::Parts, delay: &mut Delay, usb: USB) -> UsbPeriph {
     // F3 Discovery board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
@@ -150,11 +112,53 @@ fn main() -> ! {
             .into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
     let usb_dp = usb_dp.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
-    let usb = Peripheral {
-        usb: device_periphs.USB,
+    let usb_periph = Peripheral {
+        usb: usb,
         pin_dm: usb_dm,
         pin_dp: usb_dp,
     };
+
+    // usb::Peripheral<dyn DmPin, dyn DpPin>
+
+    usb_periph
+}
+
+#[entry]
+fn main() -> ! {
+    let device_periphs = pac::Peripherals::take().unwrap();
+
+    let core_periphs = cortex_m::Peripherals::take().unwrap();
+
+    let mut reset_and_clock_control = device_periphs.RCC.constrain();
+
+    let mut flash = device_periphs.FLASH.constrain();
+
+    let clocks = get_clocks(reset_and_clock_control.cfgr, &mut flash);
+
+    let mut delay = Delay::new(core_periphs.SYST, clocks);
+
+    let gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
+    let mut gpiod = device_periphs.GPIOD.split(&mut reset_and_clock_control.ahb);
+    let gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
+
+    let mut leds = get_leds(gpioe);
+
+    let button_d3 = gpiod
+        .pd3
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let mut pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let mut adc3 = get_adc(
+        Adc3Arg {
+            adc3: device_periphs.ADC3,
+            adc3_4: device_periphs.ADC3_4,
+            ahb: reset_and_clock_control.ahb,
+        },
+        clocks,
+    );
+
+    let usb = get_usb_init(gpioa, &mut delay, device_periphs.USB);
 
     let usb_bus = UsbBus::new(usb);
 
@@ -203,17 +207,15 @@ fn main() -> ! {
             }
         }
 
-        let adc1_in1_data: u16 = adc3
-            .read(&mut pd14_pin)
-            .expect("Error reading adc3.");
+        let adc1_in1_data: u16 = adc3.read(&mut pd14_pin).expect("Error reading adc3.");
 
         let adc_val_32 = adc1_in1_data as f32;
 
-        let scaled = adc_val_32 / 4095_f32;
+        let _scaled = adc_val_32 / 4095_f32;
 
         // for curr in 0..8 {
         //     let current = (curr as f32) / 8_f32;
-        //     if scaled >  current {
+        //     if _scaled > current {
         //         leds[curr].on().ok();
         //     } else {
         //         leds[curr].off().ok();
