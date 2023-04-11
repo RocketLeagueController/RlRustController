@@ -4,7 +4,7 @@ use stm32f3xx_hal::{
     adc::{self, Adc},
     delay::Delay,
     flash::Parts,
-    gpio::{self, gpioa, gpioe, Alternate, Output, Pin, PushPull, Ux, U},
+    gpio::{self, gpioa, gpioe, Alternate, Gpioa, Output, Pin, PushPull, Ux, U},
     pac::{ADC3, ADC3_4, USB},
     prelude::_embedded_hal_digital_OutputPin,
     rcc::{Clocks, AHB, CFGR},
@@ -16,12 +16,13 @@ use switch_hal::{ActiveHigh, Switch};
 
 use crate::leds::Leds;
 
-pub type LedArray = [Switch<Pin<gpio::Gpioe, Ux, Output<PushPull>>, ActiveHigh>; 8];
+type LedPinType = Pin<gpio::Gpioe, Ux, Output<PushPull>>;
+pub type LedArray = [Switch<LedPinType, ActiveHigh>; 8];
 
-pub type UsbPeriph = Peripheral<
-    Pin<gpio::Gpioa, U<11>, Alternate<PushPull, 14>>,
-    Pin<gpio::Gpioa, U<12>, Alternate<PushPull, 14>>,
->;
+pub type UsbDmPinType = Pin<Gpioa, U<11>, Alternate<PushPull, 14>>;
+pub type UsbDpPinType = Pin<Gpioa, U<12>, Alternate<PushPull, 14>>;
+
+pub type UsbPeriph = Peripheral<UsbDmPinType, UsbDpPinType>;
 
 pub fn get_leds(mut gpioe: gpioe::Parts) -> LedArray {
     let leds = Leds::new(

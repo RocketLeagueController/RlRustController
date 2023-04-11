@@ -14,42 +14,28 @@ use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{
     adc::Adc,
     delay::Delay,
-    gpio::{Alternate, Analog, Gpioa, Gpiod, Input, Pin, PushPull, U},
+    gpio::{Analog, Gpiod, Input, Pin, U},
     pac::{self, ADC3},
     prelude::{
         _embedded_hal_blocking_delay_DelayUs, _embedded_hal_digital_InputPin,
         _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt,
     },
     rcc::RccExt,
-    usb::Peripheral,
 };
 
 use source::init::*;
 use switch_hal::OutputSwitch;
-use usb_device::prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usb_device::{
+    class_prelude::UsbBusAllocator,
+    prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
+};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 mod controller;
 
-pub type SerialPortType<'a> = SerialPort<
-    'a,
-    UsbBus<
-        Peripheral<
-            Pin<Gpioa, U<11>, Alternate<PushPull, 14>>,
-            Pin<Gpioa, U<12>, Alternate<PushPull, 14>>,
-        >,
-    >,
->;
+pub type SerialPortType<'a> = SerialPort<'a, UsbBus<UsbPeriph>>;
 
-type UsbDevType<'a> = UsbDevice<
-    'a,
-    UsbBus<
-        Peripheral<
-            Pin<Gpioa, U<11>, Alternate<PushPull, 14>>,
-            Pin<Gpioa, U<12>, Alternate<PushPull, 14>>,
-        >,
-    >,
->;
+type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
 
 struct App<'a> {
     button_d3: Pin<Gpiod, U<3>, Input>,
@@ -89,9 +75,9 @@ fn main() -> ! {
         clocks,
     );
 
-    let usb_peripheral = get_usb_init(gpioa, &mut delay, device_periphs.USB);
-    let usb_bus = UsbBus::new(usb_peripheral);
-    let usb_serial = SerialPort::new(&usb_bus);
+    let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
+    let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
+    let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
 
     let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .manufacturer("Fake company")
