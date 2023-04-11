@@ -52,13 +52,13 @@ type UsbDevType<'a> = UsbDevice<
 >;
 
 struct App<'a> {
-    serial: SerialPortType<'a>,
     button_d3: Pin<Gpiod, U<3>, Input>,
     pd14_pin: Pin<Gpiod, U<14>, Analog>,
     leds: LedArray,
     delay: Delay,
     adc3: Adc<ADC3>,
-    usb_dev: UsbDevType<'a>,
+    usb_serial: SerialPortType<'a>,
+    usb_device: UsbDevType<'a>,
 }
 
 #[entry]
@@ -89,11 +89,11 @@ fn main() -> ! {
         clocks,
     );
 
-    let usb = get_usb_init(gpioa, &mut delay, device_periphs.USB);
-    let usb_bus = UsbBus::new(usb);
-    let serial = SerialPort::new(&usb_bus);
+    let usb_peripheral = get_usb_init(gpioa, &mut delay, device_periphs.USB);
+    let usb_bus = UsbBus::new(usb_peripheral);
+    let usb_serial = SerialPort::new(&usb_bus);
 
-    let usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .manufacturer("Fake company")
         .product("Serial port")
         .serial_number("TEST")
@@ -106,13 +106,13 @@ fn main() -> ! {
     let mut nb_iter = 0u64;
 
     let mut app = App {
-        serial,
         button_d3,
         pd14_pin,
         leds,
         delay,
         adc3,
-        usb_dev,
+        usb_serial,
+        usb_device,
     };
 
     loop {
@@ -131,8 +131,8 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
             controller_state.a = true;
 
             let to_send = controller_state.to_string();
-            _ = app.serial.write(to_send.as_bytes());
-            _ = app.serial.flush().is_ok();
+            _ = app.usb_serial.write(to_send.as_bytes());
+            _ = app.usb_serial.flush().is_ok();
 
             app.leds[5].on().ok();
 
@@ -141,8 +141,8 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
             controller_state.a = false;
 
             let to_send = controller_state.to_string();
-            _ = app.serial.write(to_send.as_bytes());
-            _ = app.serial.flush().is_ok();
+            _ = app.usb_serial.write(to_send.as_bytes());
+            _ = app.usb_serial.flush().is_ok();
 
             app.leds[5].off().ok();
 
@@ -168,7 +168,7 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     //     }
     // }
 
-    if !app.usb_dev.poll(&mut [&mut app.serial]) {
+    if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
         // leds[0].on().ok();
         return;
     } else {
