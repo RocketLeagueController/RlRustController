@@ -31,7 +31,9 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 mod controller;
 
-fn get_leds(mut gpioe : gpioe::Parts) -> [Switch<Pin<gpio::Gpioe, Ux, Output<PushPull>>, ActiveHigh>; 8] {
+type LedArray = [Switch<Pin<gpio::Gpioe, Ux, Output<PushPull>>, ActiveHigh>; 8];
+
+fn get_leds(mut gpioe : gpioe::Parts) -> LedArray {
     let leds = Leds::new(
         gpioe.pe8,
         gpioe.pe9,
@@ -85,21 +87,20 @@ fn main() -> ! {
 
     let mut gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
     let mut gpiod = device_periphs.GPIOD.split(&mut reset_and_clock_control.ahb);
-
-    //let button_a0 = UserButton::new(gpioa.pa0, &mut gpioa.moder, &mut gpioa.pupdr);
-
-    let pd3_pin = gpiod
-        .pd3
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
-        .downgrade()
-        .downgrade();
-
-    let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
-
-    // initialize user leds
     let mut gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
 
     let mut leds = get_leds(gpioe);
+
+    //let button_a0 = UserButton::new(gpioa.pa0, &mut gpioa.moder, &mut gpioa.pupdr);
+
+    let button_d3 = gpiod
+        .pd3
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let mut pd14_pin = 
+        gpiod
+        .pd14
+        .into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let mut adc3 = adc::Adc::adc3(
         device_periphs.ADC3, // The ADC we are going to control
@@ -110,9 +111,6 @@ fn main() -> ! {
         adc::ClockMode::default(),
         clocks,
     );
-
-    let button_d3 = pd3_pin;
-    let mut analog_input_d14 = pd14_pin;
 
     // F3 Discovery board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
@@ -187,8 +185,9 @@ fn main() -> ! {
         }
 
         let adc1_in1_data: u16 = adc3
-            .read(&mut analog_input_d14)
+            .read(&mut pd14_pin)
             .expect("Error reading adc3.");
+        
         let adc_val_32 = adc1_in1_data as f32;
 
         let scaled = adc_val_32 / 4095_f32;
