@@ -50,6 +50,7 @@ struct App<'a> {
     button_b4: Pin<Gpiob, U<4>, Input>,
     button_b5: Pin<Gpiob, U<5>, Input>,
 
+    pb15_pin: Pin<Gpiob, U<15>, Analog>,
     pd8_pin: Pin<Gpiod, U<8>, Analog>,
     pd9_pin: Pin<Gpiod, U<9>, Analog>,
     pd10_pin: Pin<Gpiod, U<10>, Analog>,
@@ -57,7 +58,7 @@ struct App<'a> {
     pd12_pin: Pin<Gpiod, U<12>, Analog>,
     pd13_pin: Pin<Gpiod, U<13>, Analog>,
     pd14_pin: Pin<Gpiod, U<14>, Analog>,
-    
+
     leds: LedArray,
     delay: Delay,
     adc3: Adc<ADC3>,
@@ -127,6 +128,7 @@ fn main() -> ! {
     let pd12_pin = gpiod.pd12.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd13_pin = gpiod.pd13.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pb15_pin = gpiob.pb15.into_analog(&mut gpiob.moder, &mut gpiob.pupdr);
 
     let adc3 = get_adc3(
         device_periphs.ADC3,
@@ -169,6 +171,7 @@ fn main() -> ! {
         button_d2,
         button_b4,
         button_b5,
+        pb15_pin,
         pd8_pin,
         pd9_pin,
         pd10_pin,
@@ -234,31 +237,28 @@ fn read_adc_value(result: Result<u16, stm32f3xx_hal::nb::Error<()>>) -> f32 {
 
 fn read_joystick_states(app: &mut App, controller_state: &mut ControllerState) {
     let val = app.adc4.read(&mut app.pd8_pin);
-    controller_state.other_value_0 = read_adc_value(val);
-
-    let val = app.adc4.read(&mut app.pd9_pin);
-    controller_state.other_value_1 = read_adc_value(val);
-
-    let val = app.adc3.read(&mut app.pd10_pin);
     controller_state.left_thumb_x = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd11_pin);
+    let val = app.adc4.read(&mut app.pd9_pin);
     controller_state.left_thumb_y = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd12_pin);
+    let val = app.adc3.read(&mut app.pd10_pin);
     controller_state.right_thumb_x = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd13_pin);
+    let val = app.adc3.read(&mut app.pd11_pin);
     controller_state.right_thumb_y = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd13_pin);
+    let val = app.adc3.read(&mut app.pd12_pin);
     controller_state.left_trigger = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd14_pin);
+    let val = app.adc3.read(&mut app.pd13_pin);
     controller_state.right_trigger = read_adc_value(val);
 
-    let val = app.adc3.read(&mut app.pd14_pin);
-    controller_state.right_trigger = read_adc_value(val);
+    let val = app.adc4.read(&mut app.pd14_pin);
+    controller_state.other_value_0 = read_adc_value(val);
+
+    let val = app.adc4.read(&mut app.pb15_pin);
+    controller_state.other_value_1 = read_adc_value(val);
 }
 
 fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
