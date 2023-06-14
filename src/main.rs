@@ -37,14 +37,25 @@ pub type SerialPortType<'a> = SerialPort<'a, UsbBus<UsbPeriph>>;
 
 type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
 
-struct App<'a> {
+struct App
+//<'a> 
+{
     button_d3: Pin<Gpiod, U<3>, Input>,
+    button_d4: Pin<Gpiod, U<4>, Input>,
+    button_d5: Pin<Gpiod, U<5>, Input>,
+    button_d6: Pin<Gpiod, U<6>, Input>,
+    button_d7: Pin<Gpiod, U<7>, Input>,
+    button_d1: Pin<Gpiod, U<1>, Input>,
+    button_d0: Pin<Gpiod, U<0>, Input>,
+    button_d2: Pin<Gpiod, U<2>, Input>,
+    button_d9: Pin<Gpiod, U<9>, Input>,
+    button_d8: Pin<Gpiod, U<8>, Input>,
     pd14_pin: Pin<Gpiod, U<14>, Analog>,
     leds: LedArray,
     delay: Delay,
     adc3: Adc<ADC3>,
-    usb_serial: SerialPortType<'a>,
-    usb_device: UsbDevType<'a>,
+    // usb_serial: SerialPortType<'a>,
+    // usb_device: UsbDevType<'a>,
 }
 
 #[entry]
@@ -64,6 +75,42 @@ fn main() -> ! {
         .pd3
         .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
+    let button_d4 = gpiod
+        .pd4
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d5 = gpiod
+        .pd5
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d6 = gpiod
+        .pd6
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d7 = gpiod
+        .pd7
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d1 = gpiod
+        .pd1
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d0 = gpiod
+        .pd0
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d2 = gpiod
+        .pd2
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d9 = gpiod
+        .pd9
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
+    let button_d8 = gpiod
+        .pd8
+        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+
     let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let adc3 = get_adc(
@@ -75,16 +122,16 @@ fn main() -> ! {
         clocks,
     );
 
-    let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
-    let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
-    let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
+    // let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
+    // let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
+    // let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
 
-    let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
-        .manufacturer("Fake company")
-        .product("Serial port")
-        .serial_number("TEST")
-        .device_class(USB_CLASS_CDC)
-        .build();
+    // let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    //     .manufacturer("Fake company")
+    //     .product("Serial port")
+    //     .serial_number("TEST")
+    //     .device_class(USB_CLASS_CDC)
+    //     .build();
 
     leds[0].off().ok();
 
@@ -93,12 +140,21 @@ fn main() -> ! {
 
     let mut app = App {
         button_d3,
+        button_d4,
+        button_d5,
+        button_d6,
+        button_d7,
+        button_d1,
+        button_d0,
+        button_d2,
+        button_d9,
+        button_d8,
         pd14_pin,
         leds,
         delay,
         adc3,
-        usb_serial,
-        usb_device,
+        // usb_serial,
+        // usb_device,
     };
 
     loop {
@@ -111,29 +167,14 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     // TODO : use clock
 
     if *nb_iter % 1000 == 0 {
-        let button_state = app.button_d3.is_high().unwrap();
 
-        if button_state {
-            controller_state.a = true;
+        read_buttons_states(app, controller_state);
 
-            let to_send = controller_state.to_string();
-            _ = app.usb_serial.write(to_send.as_bytes());
-            _ = app.usb_serial.flush().is_ok();
+        // let to_send = controller_state.to_string();
+        // _ = app.usb_serial.write(to_send.as_bytes());
+        // _ = app.usb_serial.flush().is_ok();
 
-            app.leds[5].on().ok();
-
-            app.delay.delay_us(100u32);
-        } else {
-            controller_state.a = false;
-
-            let to_send = controller_state.to_string();
-            _ = app.usb_serial.write(to_send.as_bytes());
-            _ = app.usb_serial.flush().is_ok();
-
-            app.leds[5].off().ok();
-
-            app.delay.delay_us(100u32);
-        }
+        app.delay.delay_us(100u32);
     }
 
     let adc1_in1_data: u16 = app
@@ -154,10 +195,115 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     //     }
     // }
 
-    if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
-        // leds[0].on().ok();
-        return;
+    // if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
+    //     // leds[0].on().ok();
+    //     return;
+    // } else {
+    //     app.leds[0].on().ok();
+    // }
+
+}
+
+fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
+    let button_state = app.button_d3.is_high().unwrap();
+
+    if button_state {
+        controller_state.a = true;
+        app.leds[1].on().ok();
     } else {
-        app.leds[0].on().ok();
+        controller_state.a = false;
+        app.leds[1].off().ok();
     }
+
+    let button_state = app.button_d4.is_high().unwrap();
+
+    if button_state {
+        controller_state.b = true;
+        app.leds[2].on().ok();
+    } else {
+        controller_state.b = false;
+        app.leds[2].off().ok();
+    }
+
+    let button_state = app.button_d5.is_high().unwrap();
+
+    if button_state {
+        controller_state.x = true;
+        app.leds[3].on().ok();
+    } else {
+        controller_state.x = false;
+        app.leds[3].off().ok();
+    }
+
+    let button_state = app.button_d6.is_high().unwrap();
+
+    if button_state {
+        controller_state.y = true;
+        app.leds[4].on().ok();
+    } else {
+        controller_state.y = false;
+        app.leds[4].off().ok();
+    }
+
+    let button_state = app.button_d1.is_high().unwrap();
+
+    if button_state {
+        controller_state.left_shoulder = true;
+        app.leds[5].on().ok();
+    } else {
+        controller_state.left_shoulder = false;
+        app.leds[5].off().ok();
+    }
+
+    let button_state = app.button_d7.is_high().unwrap();
+
+    if button_state {
+        controller_state.right_shoulder = true;
+        app.leds[6].on().ok();
+    } else {
+        controller_state.right_shoulder = false;
+        app.leds[6].off().ok();
+    }
+
+    let button_state = app.button_d0.is_high().unwrap();
+
+    if button_state {
+        controller_state.left_thumb = true;
+        app.leds[0].on().ok();
+    } else {
+        controller_state.left_thumb = false;
+        app.leds[0].off().ok();
+    }
+
+    let button_state = app.button_d2.is_high().unwrap();
+
+    if button_state {
+        controller_state.right_thumb = true;
+        app.leds[1].on().ok();
+    } else {
+        controller_state.right_thumb = false;
+        app.leds[1].off().ok();
+    }
+
+    let button_state = app.button_d9.is_high().unwrap();
+
+    if button_state {
+        controller_state.start = true;
+        app.leds[2].on().ok();
+    } else {
+        controller_state.start = false;
+        app.leds[2].off().ok();
+    }
+
+    let button_state = app.button_d8.is_high().unwrap();
+
+    if button_state {
+        controller_state.back = true;
+        app.leds[3].on().ok();
+    } else {
+        controller_state.back = false;
+        app.leds[3].off().ok();
+    }
+
+    
 }
