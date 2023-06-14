@@ -14,8 +14,8 @@ use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{
     adc::Adc,
     delay::Delay,
-    gpio::{Analog, Gpiod, Input, Pin, U},
-    pac::{self, ADC3},
+    gpio::{Analog, Gpiod, Gpiob, Input, Pin, U, Ux},
+    pac::{self, ADC3, ADC4},
     prelude::{
         _embedded_hal_blocking_delay_DelayUs, _embedded_hal_digital_InputPin,
         _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt,
@@ -37,9 +37,7 @@ pub type SerialPortType<'a> = SerialPort<'a, UsbBus<UsbPeriph>>;
 
 type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
 
-struct App
-//<'a> 
-{
+struct App<'a> {
     button_d3: Pin<Gpiod, U<3>, Input>,
     button_d4: Pin<Gpiod, U<4>, Input>,
     button_d5: Pin<Gpiod, U<5>, Input>,
@@ -48,19 +46,29 @@ struct App
     button_d1: Pin<Gpiod, U<1>, Input>,
     button_d0: Pin<Gpiod, U<0>, Input>,
     button_d2: Pin<Gpiod, U<2>, Input>,
-    button_d9: Pin<Gpiod, U<9>, Input>,
-    button_d8: Pin<Gpiod, U<8>, Input>,
+
+    button_b4: Pin<Gpiob, U<4>, Input>,
+    button_b5: Pin<Gpiob, U<5>, Input>,
+
+    pd8_pin: Pin<Gpiod, U<8>, Analog>,
+    pd9_pin: Pin<Gpiod, U<9>, Analog>,
+    pd10_pin: Pin<Gpiod, U<10>, Analog>,
+    pd11_pin: Pin<Gpiod, U<11>, Analog>,
+    pd12_pin: Pin<Gpiod, U<12>, Analog>,
+    pd13_pin: Pin<Gpiod, U<13>, Analog>,
     pd14_pin: Pin<Gpiod, U<14>, Analog>,
+    
     leds: LedArray,
     delay: Delay,
     adc3: Adc<ADC3>,
-    // usb_serial: SerialPortType<'a>,
-    // usb_device: UsbDevType<'a>,
+    adc4: Adc<ADC4>,
+    usb_serial: SerialPortType<'a>,
+    usb_device: UsbDevType<'a>,
 }
 
 #[entry]
 fn main() -> ! {
-    let device_periphs = pac::Peripherals::take().unwrap();
+    let mut device_periphs = pac::Peripherals::take().unwrap();
     let core_periphs = cortex_m::Peripherals::take().unwrap();
     let mut reset_and_clock_control = device_periphs.RCC.constrain();
     let mut flash = device_periphs.FLASH.constrain();
@@ -68,7 +76,8 @@ fn main() -> ! {
     let mut delay = Delay::new(core_periphs.SYST, clocks);
     let gpioa = device_periphs.GPIOA.split(&mut reset_and_clock_control.ahb);
     let mut gpiod = device_periphs.GPIOD.split(&mut reset_and_clock_control.ahb);
-    let gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
+    let mut gpioe = device_periphs.GPIOE.split(&mut reset_and_clock_control.ahb);
+    let mut gpiob = device_periphs.GPIOB.split(&mut reset_and_clock_control.ahb);
     let mut leds = get_leds(gpioe);
 
     let button_d3 = gpiod
@@ -103,35 +112,46 @@ fn main() -> ! {
         .pd2
         .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
-    let button_d9 = gpiod
-        .pd9
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+    let button_b4 = gpiob
+        .pb4
+        .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr);
 
-    let button_d8 = gpiod
-        .pd8
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+    let button_b5 = gpiob
+        .pb5
+        .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr);
 
+    let pd8_pin = gpiod.pd8.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pd9_pin = gpiod.pd9.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pd10_pin = gpiod.pd10.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pd11_pin = gpiod.pd11.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pd12_pin = gpiod.pd12.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pd13_pin = gpiod.pd13.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
 
-    let adc3 = get_adc(
-        Adc3Arg {
-            adc3: device_periphs.ADC3,
-            adc3_4: device_periphs.ADC3_4,
-            ahb: reset_and_clock_control.ahb,
-        },
+    let adc3 = get_adc3(
+        device_periphs.ADC3,
+        &mut device_periphs.ADC3_4,
+        &mut reset_and_clock_control.ahb,
+        clocks,
+    );
+    
+    let adc4 = get_adc4(
+        device_periphs.ADC4,
+        &mut device_periphs.ADC3_4,
+        &mut reset_and_clock_control.ahb,
         clocks,
     );
 
-    // let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
-    // let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
-    // let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
+    let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
+    let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
+    let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
 
-    // let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
-    //     .manufacturer("Fake company")
-    //     .product("Serial port")
-    //     .serial_number("TEST")
-    //     .device_class(USB_CLASS_CDC)
-    //     .build();
+    let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+        .manufacturer("Fake company")
+        .product("Serial port")
+        .serial_number("TEST")
+        .device_class(USB_CLASS_CDC)
+        .build();
 
     leds[0].off().ok();
 
@@ -147,14 +167,21 @@ fn main() -> ! {
         button_d1,
         button_d0,
         button_d2,
-        button_d9,
-        button_d8,
+        button_b4,
+        button_b5,
+        pd8_pin,
+        pd9_pin,
+        pd10_pin,
+        pd11_pin,
+        pd12_pin,
+        pd13_pin,
         pd14_pin,
         leds,
         delay,
         adc3,
-        // usb_serial,
-        // usb_device,
+        adc4,
+        usb_serial,
+        usb_device,
     };
 
     loop {
@@ -169,29 +196,23 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     if *nb_iter % 1000 == 0 {
 
         read_buttons_states(app, controller_state);
+        read_joystick_states(app, controller_state);
 
-        // let to_send = controller_state.to_string();
-        // _ = app.usb_serial.write(to_send.as_bytes());
-        // _ = app.usb_serial.flush().is_ok();
+        let to_send = controller_state.to_string();
+        _ = app.usb_serial.write(to_send.as_bytes());
+        _ = app.usb_serial.flush().is_ok();
 
         app.delay.delay_us(100u32);
     }
-
-    let adc1_in1_data: u16 = app
-        .adc3
-        .read(&mut app.pd14_pin)
-        .expect("Error reading adc3.");
-
-    let adc_val_32 = adc1_in1_data as f32;
-
-    let _scaled = adc_val_32 / 4095_f32;
-
+                                                                                                                                                                                                                                                                                                                                                                              
+    // To debug ADC
+    // let value = controller_state.other_value_1;
     // for curr in 0..8 {
     //     let current = (curr as f32) / 8_f32;
-    //     if _scaled > current {
-    //         leds[curr].on().ok();
+    //     if value >= current {
+    //         app.leds[curr].on().ok();
     //     } else {
-    //         leds[curr].off().ok();
+    //         app.leds[curr].off().ok();
     //     }
     // }
 
@@ -204,104 +225,63 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
 
 }
 
+fn read_adc_value(result: Result<u16, stm32f3xx_hal::nb::Error<()>>) -> f32 {
+    let adc_value: u16 = result.expect("Error reading adc.");
+    let adc_val_32 = adc_value as f32;
+    let scaled_adb_value = adc_val_32 / 4095_f32;
+    scaled_adb_value
+}
+
+fn read_joystick_states(app: &mut App, controller_state: &mut ControllerState) {
+    let val = app.adc4.read(&mut app.pd8_pin);
+    controller_state.other_value_0 = read_adc_value(val);
+
+    let val = app.adc4.read(&mut app.pd9_pin);
+    controller_state.other_value_1 = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd10_pin);
+    controller_state.left_thumb_x = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd11_pin);
+    controller_state.left_thumb_y = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd12_pin);
+    controller_state.right_thumb_x = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd13_pin);
+    controller_state.right_thumb_y = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd13_pin);
+    controller_state.left_trigger = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd14_pin);
+    controller_state.right_trigger = read_adc_value(val);
+
+    let val = app.adc3.read(&mut app.pd14_pin);
+    controller_state.right_trigger = read_adc_value(val);
+}
+
 fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
-    let button_state = app.button_d3.is_high().unwrap();
+    controller_state.a = app.button_d3.is_high().unwrap();
+    controller_state.b = app.button_d4.is_high().unwrap();
+    controller_state.x = app.button_d5.is_high().unwrap();
+    controller_state.y = app.button_d6.is_high().unwrap();
+    controller_state.left_shoulder = app.button_d1.is_high().unwrap();
+    controller_state.right_shoulder = app.button_d7.is_high().unwrap();
+    controller_state.left_thumb = app.button_d0.is_high().unwrap();
+    controller_state.right_thumb = app.button_d2.is_high().unwrap();
+    controller_state.start = app.button_b4.is_high().unwrap();
+    controller_state.back = app.button_b5.is_high().unwrap();
 
-    if button_state {
-        controller_state.a = true;
-        app.leds[1].on().ok();
-    } else {
-        controller_state.a = false;
-        app.leds[1].off().ok();
-    }
-
-    let button_state = app.button_d4.is_high().unwrap();
-
-    if button_state {
-        controller_state.b = true;
+    if controller_state.start {
         app.leds[2].on().ok();
     } else {
-        controller_state.b = false;
         app.leds[2].off().ok();
     }
 
-    let button_state = app.button_d5.is_high().unwrap();
-
-    if button_state {
-        controller_state.x = true;
+    if controller_state.back {
         app.leds[3].on().ok();
     } else {
-        controller_state.x = false;
-        app.leds[3].off().ok();
-    }
-
-    let button_state = app.button_d6.is_high().unwrap();
-
-    if button_state {
-        controller_state.y = true;
-        app.leds[4].on().ok();
-    } else {
-        controller_state.y = false;
-        app.leds[4].off().ok();
-    }
-
-    let button_state = app.button_d1.is_high().unwrap();
-
-    if button_state {
-        controller_state.left_shoulder = true;
-        app.leds[5].on().ok();
-    } else {
-        controller_state.left_shoulder = false;
-        app.leds[5].off().ok();
-    }
-
-    let button_state = app.button_d7.is_high().unwrap();
-
-    if button_state {
-        controller_state.right_shoulder = true;
-        app.leds[6].on().ok();
-    } else {
-        controller_state.right_shoulder = false;
-        app.leds[6].off().ok();
-    }
-
-    let button_state = app.button_d0.is_high().unwrap();
-
-    if button_state {
-        controller_state.left_thumb = true;
-        app.leds[0].on().ok();
-    } else {
-        controller_state.left_thumb = false;
-        app.leds[0].off().ok();
-    }
-
-    let button_state = app.button_d2.is_high().unwrap();
-
-    if button_state {
-        controller_state.right_thumb = true;
-        app.leds[1].on().ok();
-    } else {
-        controller_state.right_thumb = false;
-        app.leds[1].off().ok();
-    }
-
-    let button_state = app.button_d9.is_high().unwrap();
-
-    if button_state {
-        controller_state.start = true;
-        app.leds[2].on().ok();
-    } else {
-        controller_state.start = false;
-        app.leds[2].off().ok();
-    }
-
-    let button_state = app.button_d8.is_high().unwrap();
-
-    if button_state {
-        controller_state.back = true;
-        app.leds[3].on().ok();
-    } else {
-        controller_state.back = false;
         app.leds[3].off().ok();
     }
 

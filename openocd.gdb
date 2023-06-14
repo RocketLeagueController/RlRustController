@@ -35,4 +35,7 @@ continue
 # Step from the trampoline code in entry into main
 step
 
+# Avoid quit confirmation
+set confirm off
+
 continue

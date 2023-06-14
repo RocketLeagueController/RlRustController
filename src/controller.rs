@@ -24,6 +24,8 @@ pub struct ControllerState {
     pub right_thumb_y: f32,
     pub left_trigger: f32,
     pub right_trigger: f32,
+    pub other_value_0: f32,
+    pub other_value_1: f32,
 }
 
 impl ControllerState {
@@ -50,6 +52,8 @@ impl ControllerState {
             right_thumb_y: 0.0f32,
             left_trigger: 0.0f32,
             right_trigger: 0.0f32,
+            other_value_0: 0.0f32,
+            other_value_1: 0.0f32,
         }
     }
 

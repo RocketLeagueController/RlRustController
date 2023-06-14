@@ -5,7 +5,7 @@ use stm32f3xx_hal::{
     delay::Delay,
     flash::Parts,
     gpio::{self, gpioa, gpioe, Alternate, Gpioa, Output, Pin, PushPull, Ux, U},
-    pac::{ADC3, ADC3_4, USB},
+    pac::{ADC3, ADC4, ADC3_4, USB},
     prelude::_embedded_hal_digital_OutputPin,
     rcc::{Clocks, AHB, CFGR},
     time::rate::Megahertz,
@@ -42,24 +42,32 @@ pub fn get_leds(mut gpioe: gpioe::Parts) -> LedArray {
     return leds;
 }
 
-pub struct Adc3Arg {
-    pub adc3: ADC3,
-    pub adc3_4: ADC3_4,
-    pub ahb: AHB,
-}
-
-pub fn get_adc(mut arg: Adc3Arg, clocks: Clocks) -> Adc<ADC3> {
+pub fn get_adc3(adc3: ADC3, adc3_4: &mut ADC3_4, ahb: &mut AHB, clocks: Clocks) -> Adc<ADC3> {
     let adc3 = adc::Adc::adc3(
-        arg.adc3, // The ADC we are going to control
+        adc3, // The ADC we are going to control
         // The following is only needed to make sure the clock signal for the ADC is set up
         // correctly.
-        &mut arg.adc3_4,
-        &mut arg.ahb,
+        adc3_4,
+        ahb,
         adc::ClockMode::default(),
         clocks,
     );
 
     return adc3;
+}
+
+pub fn get_adc4(adc4: ADC4, adc3_4: &mut ADC3_4, ahb: &mut AHB, clocks: Clocks) -> Adc<ADC4> {
+    let adc4 = adc::Adc::adc4(
+        adc4, // The ADC we are going to control
+        // The following is only needed to make sure the clock signal for the ADC is set up
+        // correctly.
+        adc3_4,
+        ahb,
+        adc::ClockMode::default(),
+        clocks,
+    );
+
+    return adc4;
 }
 
 pub fn get_clocks(cfgr: CFGR, flash: &mut Parts) -> Clocks {
