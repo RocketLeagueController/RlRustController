@@ -209,15 +209,16 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     }
                                                                                                                                                                                                                                                                                                                                                                               
     // To debug ADC
-    // let value = controller_state.other_value_1;
-    // for curr in 0..8 {
-    //     let current = (curr as f32) / 8_f32;
-    //     if value >= current {
-    //         app.leds[curr].on().ok();
-    //     } else {
-    //         app.leds[curr].off().ok();
-    //     }
-    // }
+    let value = controller_state.other_value_1 + 0.02f32;
+    let leds_max_index = 7;
+    for curr in 0..=leds_max_index {
+        let current = (curr as f32) / leds_max_index as f32;
+        if value >= current {
+            app.leds[curr].on().ok();
+        } else {
+            app.leds[curr].off().ok();
+        }
+    }
 
     // if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
     //     // leds[0].on().ok();
@@ -272,18 +273,4 @@ fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
     controller_state.right_thumb = app.button_d2.is_high().unwrap();
     controller_state.start = app.button_b4.is_high().unwrap();
     controller_state.back = app.button_b5.is_high().unwrap();
-
-    if controller_state.start {
-        app.leds[2].on().ok();
-    } else {
-        app.leds[2].off().ok();
-    }
-
-    if controller_state.back {
-        app.leds[3].on().ok();
-    } else {
-        app.leds[3].off().ok();
-    }
-
-    
 }
