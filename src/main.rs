@@ -14,26 +14,27 @@ use stm32_usbd::UsbBus;
 use stm32f3xx_hal::{
     adc::Adc,
     delay::Delay,
-    gpio::{Analog, Gpiod, Gpiob, Input, Pin, U, Ux},
+    gpio::{Analog, Gpiod, Gpiob, Input, Pin, U, Ux, Gpioa, PushPull, Alternate},
     pac::{self, ADC3, ADC4},
     prelude::{
         _embedded_hal_blocking_delay_DelayUs, _embedded_hal_digital_InputPin,
         _stm32f3xx_hal_flash_FlashExt, _stm32f3xx_hal_gpio_GpioExt,
     },
-    rcc::RccExt,
+    rcc::RccExt, hal, usb::Peripheral,
 };
 
 use source::init::*;
 use switch_hal::OutputSwitch;
 use usb_device::{
-    class_prelude::UsbBusAllocator,
-    prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
+    class_prelude::*,
+    prelude::*,
 };
-use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use usbd_human_interface_device::{*, usb_class::*, device::{joystick::JoystickReport, DeviceHList}};
+use embedded_hal::digital::v2::*;
+
 
 mod controller;
 
-pub type SerialPortType<'a> = SerialPort<'a, UsbBus<UsbPeriph>>;
 
 type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
 
@@ -55,7 +56,7 @@ struct App<'a> {
     pd9_pin: Pin<Gpiod, U<9>, Analog>,
     pd10_pin: Pin<Gpiod, U<10>, Analog>,
     pd11_pin: Pin<Gpiod, U<11>, Analog>,
-    pd12_pin: Pin<Gpiod, U<12>, Analog>,
+    pb12_pin: Pin<Gpiob, U<12>, Analog>,
     pd13_pin: Pin<Gpiod, U<13>, Analog>,
     pd14_pin: Pin<Gpiod, U<14>, Analog>,
 
@@ -63,8 +64,9 @@ struct App<'a> {
     delay: Delay,
     adc3: Adc<ADC3>,
     adc4: Adc<ADC4>,
-    usb_serial: SerialPortType<'a>,
+    //usb_serial: SerialPortType<'a>,
     usb_device: UsbDevType<'a>,
+    usb_joy: UsbHidClass<'a, stm32_usbd::UsbBus<Peripheral<stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<11>, Alternate<PushPull, 14>>, stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<12>, Alternate<PushPull, 14>>>>, frunk_core::hlist::HCons<usbd_human_interface_device::device::joystick::Joystick<'a, stm32_usbd::UsbBus<Peripheral<stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<11>, Alternate<PushPull, 14>>, stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<12>, Alternate<PushPull, 14>>>>>, frunk_core::hlist::HNil>>,
 }
 
 #[entry]
@@ -83,19 +85,19 @@ fn main() -> ! {
 
     let button_d3 = gpiod
         .pd3
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d4 = gpiod
         .pd4
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d5 = gpiod
         .pd5
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d6 = gpiod
         .pd6
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d7 = gpiod
         .pd7
@@ -103,29 +105,29 @@ fn main() -> ! {
 
     let button_d1 = gpiod
         .pd1
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d0 = gpiod
         .pd0
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_d2 = gpiod
         .pd2
-        .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr);
+        .into_pull_up_input(&mut gpiod.moder, &mut gpiod.pupdr);
 
     let button_b4 = gpiob
         .pb4
-        .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr);
+        .into_pull_up_input(&mut gpiob.moder, &mut gpiob.pupdr);
 
     let button_b5 = gpiob
         .pb5
-        .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr);
+        .into_pull_up_input(&mut gpiob.moder, &mut gpiob.pupdr);
 
     let pd8_pin = gpiod.pd8.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd9_pin = gpiod.pd9.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd10_pin = gpiod.pd10.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd11_pin = gpiod.pd11.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
-    let pd12_pin = gpiod.pd12.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
+    let pb12_pin = gpiob.pb12.into_analog(&mut gpiob.moder, &mut gpiob.pupdr);
     let pd13_pin = gpiod.pd13.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pd14_pin = gpiod.pd14.into_analog(&mut gpiod.moder, &mut gpiod.pupdr);
     let pb15_pin = gpiob.pb15.into_analog(&mut gpiob.moder, &mut gpiob.pupdr);
@@ -146,13 +148,16 @@ fn main() -> ! {
 
     let usb_peripheral: UsbPeriph = get_usb_init(gpioa, &mut delay, device_periphs.USB);
     let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
-    let usb_serial: SerialPortType<'_> = SerialPort::new(&usb_bus);
+
+    let usb_joy = UsbHidClassBuilder::new()
+        .add_device(usbd_human_interface_device::device::joystick::JoystickConfig::default())
+        .build(&usb_bus);
 
     let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .manufacturer("Fake company")
         .product("Serial port")
         .serial_number("TEST")
-        .device_class(USB_CLASS_CDC)
+        //.device_class(USB_CLASS_CDC)
         .build();
 
     leds[0].off().ok();
@@ -176,15 +181,15 @@ fn main() -> ! {
         pd9_pin,
         pd10_pin,
         pd11_pin,
-        pd12_pin,
+        pb12_pin,
         pd13_pin,
         pd14_pin,
         leds,
         delay,
         adc3,
         adc4,
-        usb_serial,
         usb_device,
+        usb_joy,
     };
 
     loop {
@@ -192,7 +197,7 @@ fn main() -> ! {
     }
 }
 
-fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState, app: &mut App) {
+fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState, app: &mut App) { 
     *nb_iter += 1;
     // TODO : use clock
 
@@ -201,15 +206,23 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
         read_buttons_states(app, controller_state);
         read_joystick_states(app, controller_state);
 
-        let to_send = controller_state.to_string();
-        _ = app.usb_serial.write(to_send.as_bytes());
-        _ = app.usb_serial.flush().is_ok();
+        //let to_send = controller_state.to_string();
+        // _ = app.usb_serial.write(to_send.as_bytes());
+        // _ = app.usb_serial.flush().is_ok();
+
+        match app.usb_joy.device().write_report(&get_report(&controller_state)) {
+            Err(UsbHidError::WouldBlock) => {}
+            Ok(_) => {}
+            Err(e) => {
+                core::panic!("Failed to write joystick report: {:?}", e)
+            }
+        }
 
         app.delay.delay_us(100u32);
     }
                                                                                                                                                                                                                                                                                                                                                                               
     // To debug ADC
-    let value = controller_state.other_value_1 + 0.02f32;
+    let value = controller_state.left_thumb_x;
     let leds_max_index = 7;
     for curr in 0..=leds_max_index {
         let current = (curr as f32) / leds_max_index as f32;
@@ -220,12 +233,13 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
         }
     }
 
-    // if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
-    //     // leds[0].on().ok();
-    //     return;
-    // } else {
-    //     app.leds[0].on().ok();
-    // }
+    if !app.usb_device.poll(&mut [&mut app.usb_joy])  {
+    //if !app.usb_device.poll(&mut [&mut app.usb_serial]) {
+        // leds[0].on().ok();
+        return;
+    } else {
+        //app.leds[0].on().ok();
+    }
 
 }
 
@@ -238,18 +252,18 @@ fn read_adc_value(result: Result<u16, stm32f3xx_hal::nb::Error<()>>) -> f32 {
 
 fn read_joystick_states(app: &mut App, controller_state: &mut ControllerState) {
     let val = app.adc4.read(&mut app.pd8_pin);
-    controller_state.left_thumb_x = read_adc_value(val);
+    controller_state.left_thumb_x = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc4.read(&mut app.pd9_pin);
-    controller_state.left_thumb_y = read_adc_value(val);
+    controller_state.left_thumb_y = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc3.read(&mut app.pd10_pin);
-    controller_state.right_thumb_x = read_adc_value(val);
+    controller_state.right_thumb_x = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc3.read(&mut app.pd11_pin);
-    controller_state.right_thumb_y = read_adc_value(val);
+    controller_state.right_thumb_y = lerp(-1f32, 1f32, read_adc_value(val));
 
-    let val = app.adc3.read(&mut app.pd12_pin);
+    let val = app.adc4.read(&mut app.pb12_pin);
     controller_state.left_trigger = read_adc_value(val);
 
     let val = app.adc3.read(&mut app.pd13_pin);
@@ -273,4 +287,16 @@ fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
     controller_state.right_thumb = app.button_d2.is_high().unwrap();
     controller_state.start = app.button_b4.is_high().unwrap();
     controller_state.back = app.button_b5.is_high().unwrap();
+}
+
+
+fn lerp(from: f32, to: f32, value: f32) -> f32 {
+    return from * (1.0f32 - value) + to * value;
+}
+
+fn get_report(controller_state: &ControllerState) -> JoystickReport {
+    let x = 0i8;
+    let y = 0i8;
+    let buttons = 0u8;
+    JoystickReport { x, y, buttons }
 }
