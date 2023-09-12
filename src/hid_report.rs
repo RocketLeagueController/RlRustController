@@ -145,57 +145,57 @@ pub const XBOX_JOYSTICK_DESCRIPTOR: &[u8] = &[
 #[packed_struct(endian = "lsb", bit_numbering="lsb0", size_bytes="17")]
 pub struct XboxJoystickReport {
     #[packed_field(bits="0..=15")]
-    pub GD_GamePadX : u16, // : 16,                          // Usage 0x00010030: X, Value = 0 to 65535
+    pub gamepad_x : u16, // : 16,                          // Usage 0x00010030: X, Value = 0 to 65535
     #[packed_field(bits="16..=31")]
-    pub GD_GamePadY : u16, // : 16,                          // Usage 0x00010031: Y, Value = 0 to 65535
+    pub gamepad_y : u16, // : 16,                          // Usage 0x00010031: Y, Value = 0 to 65535
     #[packed_field(bits="32..=47")]
-    pub GD_GamePadRx : u16, // : 16,                         // Usage 0x00010033: Rx, Value = 0 to 65535
+    pub gamepad_rx : u16, // : 16,                         // Usage 0x00010033: Rx, Value = 0 to 65535
     #[packed_field(bits="48..=63")]
-    pub GD_GamePadRy : u16, // : 16,                         // Usage 0x00010034: Ry, Value = 0 to 65535
+    pub gamepad_ry : u16, // : 16,                         // Usage 0x00010034: Ry, Value = 0 to 65535
 
     #[packed_field(bits="64..=79")]
-    pub GD_GamePadZ : u16, // : 10,                          // Usage 0x00010032: Z, Value = 0 to 1023
+    pub gamepad_z : u16, // : 10,                          // Usage 0x00010032: Z, Value = 0 to 1023
     //pub unknown0 : i8, //: 6,                                // Pad
 
     #[packed_field(bits="80..=95")]
-    pub GD_GamePadRz : u16, // : 10,                         // Usage 0x00010035: Rz, Value = 0 to 1023
+    pub gamepad_rz : u16, // : 10,                         // Usage 0x00010035: Rz, Value = 0 to 1023
     //pub unknown1 : i8, //: 6,                                 // Pad
 
     #[packed_field(bits="96")]
-    pub BTN_GamePadButton1 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090001: Button 1 Primary/trigger, Value = 0 to 0
+    pub btn_gamepad_bt_1 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090001: Button 1 Primary/trigger, Value = 0 to 0
     #[packed_field(bits="97")]
-    pub BTN_GamePadButton2 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090002: Button 2 Secondary, Value = 0 to 0
+    pub btn_gamepad_bt_2 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090002: Button 2 Secondary, Value = 0 to 0
     #[packed_field(bits="98")]
-    pub BTN_GamePadButton3 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090003: Button 3 Tertiary, Value = 0 to 0
+    pub btn_gamepad_bt_3 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090003: Button 3 Tertiary, Value = 0 to 0
     #[packed_field(bits="99")]
-    pub BTN_GamePadButton4 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090004: Button 4, Value = 0 to 0
+    pub btn_gamepad_bt_4 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090004: Button 4, Value = 0 to 0
     #[packed_field(bits="100")]
-    pub BTN_GamePadButton5 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090005: Button 5, Value = 0 to 0
+    pub btn_gamepad_bt_5 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090005: Button 5, Value = 0 to 0
     #[packed_field(bits="101")]
-    pub BTN_GamePadButton6 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090006: Button 6, Value = 0 to 0
+    pub btn_gamepad_bt_6 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090006: Button 6, Value = 0 to 0
     #[packed_field(bits="102")]
-    pub BTN_GamePadButton7 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090007: Button 7, Value = 0 to 0
+    pub btn_gamepad_bt_7 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090007: Button 7, Value = 0 to 0
     #[packed_field(bits="103")]
-    pub BTN_GamePadButton8 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090008: Button 8, Value = 0 to 0
+    pub btn_gamepad_bt_8 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090008: Button 8, Value = 0 to 0
     #[packed_field(bits="104")]
-    pub BTN_GamePadButton9 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090009: Button 9, Value = 0 to 0
+    pub btn_gamepad_bt_9 : Integer<u8, packed_bits::Bits1>, // : 1,                     // Usage 0x00090009: Button 9, Value = 0 to 0
     #[packed_field(bits="105")]
-    pub BTN_GamePadButton10 : Integer<u8, packed_bits::Bits1>, // : 1,                    // Usage 0x0009000A: Button 10, Value = 0 to 0
+    pub btn_gamepad_bt_10 : Integer<u8, packed_bits::Bits1>, // : 1,                    // Usage 0x0009000A: Button 10, Value = 0 to 0
 
     #[packed_field(bits="106..=111")]
     pub pad0 : Integer<u8, packed_bits::Bits6>,
     //pub unknown2 : i8, //: 6,                                // Pad
 
     #[packed_field(bits="112..=119")]
-    pub GD_GamePadHatSwitch : u8, // : 4,                    // Usage 0x00010039: Hat switch, Value = 1 to 8, Physical = (Value - 1) x 45 in degrees
+    pub btn_gamepad_hat_switch : u8, // : 4,                    // Usage 0x00010039: Hat switch, Value = 1 to 8, Physical = (Value - 1) x 45 in degrees
     //pub unknown3 : i8, //: 4,                                // Pad
 
     #[packed_field(bits="120..=127")]
-    pub GD_GamePadSystemControlSystemMainMenu : u8, // : 1,  // Usage 0x00010085: System Main Menu, Value = 0 to 1
+    pub btn_gamepad_main_system_menu : u8, // : 1,  // Usage 0x00010085: System Main Menu, Value = 0 to 1
     //pub unknown4 : i8, //: 7,                                // Pad
 
     #[packed_field(bits="128..=135")]
-    pub GEN_GamePadBatteryStrength : u8, // : 8,             // Usage 0x00060020: Battery Strength, Value = 0 to 255
+    pub gamead_battery_strength : u8, // : 8,             // Usage 0x00060020: Battery Strength, Value = 0 to 255
 }
 
 pub struct XboxJoystick<'a, B: UsbBus> {

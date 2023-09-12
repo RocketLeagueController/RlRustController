@@ -1,7 +1,3 @@
-use core::fmt::Write;
-
-use heapless::String;
-
 pub struct ControllerState {
     pub up: bool,
     pub down: bool,
@@ -55,70 +51,5 @@ impl ControllerState {
             other_value_0: 0.0f32,
             other_value_1: 0.0f32,
         }
-    }
-
-    pub fn to_string(&self) -> String<300> {
-        let mut s: String<300> = String::new();
-        Self::add_bool(&mut s, self.up);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.down);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.left);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.right);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.start);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.back);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.left_thumb);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.right_thumb);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.left_shoulder);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.right_shoulder);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.guide);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.a);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.b);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.x);
-        Self::add_coma(&mut s);
-        Self::add_bool(&mut s, self.y);
-        Self::add_coma(&mut s);
-
-        Self::add_number(&mut s, self.left_thumb_x);
-        Self::add_coma(&mut s);
-        Self::add_number(&mut s, self.left_thumb_y);
-        Self::add_coma(&mut s);
-        Self::add_number(&mut s, self.right_thumb_x);
-        Self::add_coma(&mut s);
-        Self::add_number(&mut s, self.right_thumb_y);
-        Self::add_coma(&mut s);
-        Self::add_number(&mut s, self.left_trigger);
-        Self::add_coma(&mut s);
-        Self::add_number(&mut s, self.right_trigger);
-        _ = s.push_str("\n");
-
-        return s;
-    }
-
-    fn add_bool(str: &mut String<300>, value: bool) {
-        if value {
-            _ = str.push_str("1");
-        } else {
-            _ = str.push_str("0");
-        }
-    }
-
-    fn add_coma(str: &mut String<300>) {
-        _ = str.push_str(",");
-    }
-
-    fn add_number(str: &mut String<300>, value: f32) {
-        _ = write!(str, "{value}");
     }
 }
