@@ -5,6 +5,9 @@ extern crate packed_struct;
 #[macro_use]
 extern crate packed_struct_codegen;
 
+const JOYSTICK_MAX_VALUE : f32 = 65535f32;
+const TRIGGER_MAX_VALUE : f32 = 65535f32;
+
 use controller::ControllerState;
 use hid_report::{XboxJoystick, XboxJoystickConfig, XboxJoystickReport};
 pub use panic_itm; // panic handler
@@ -68,7 +71,6 @@ struct App<'a> {
     delay: Delay,
     adc3: Adc<ADC3>,
     adc4: Adc<ADC4>,
-    //usb_serial: SerialPortType<'a>,
     usb_device: UsbDevType<'a>,
     usb_joy: UsbHidClass<
         'a,
@@ -300,70 +302,65 @@ fn lerp(from: f32, to: f32, value: f32) -> f32 {
 
 fn get_report(controller_state: &ControllerState) -> XboxJoystickReport {
     XboxJoystickReport {
-        gamepad_x: lerp(controller_state.left_thumb_x, 0f32, 65535f32) as u16, // : 16,                          // Usage 0x00010030: X, Value = 0 to 65535
-        gamepad_y: lerp(controller_state.left_thumb_y, 0f32, 65535f32) as u16, // : 16,                          // Usage 0x00010031: Y, Value = 0 to 65535
-        gamepad_rx: lerp(controller_state.right_thumb_x, 0f32, 65535f32) as u16, // : 16,                         // Usage 0x00010033: Rx, Value = 0 to 65535
-        gamepad_ry: lerp(controller_state.right_thumb_y, 0f32, 65535f32) as u16, // : 16,                         // Usage 0x00010034: Ry, Value = 0 to 65535
-        gamepad_z: lerp(controller_state.left_trigger, 0f32, 1023f32) as u16, // : 10,                          // Usage 0x00010032: Z, Value = 0 to 1023
-        //unknown0, //: 6,                                // Pad
-        gamepad_rz: lerp(controller_state.right_trigger, 0f32, 1023f32) as u16, // : 10,                         // Usage 0x00010035: Rz, Value = 0 to 1023
-        // unknown1, //: 6,                                // Pad
+        gamepad_x: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_x) as u16,
+        gamepad_y: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_y) as u16,
+        gamepad_rx: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_x) as u16,
+        gamepad_ry: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_y) as u16,
+        gamepad_z: lerp(0f32, TRIGGER_MAX_VALUE, controller_state.left_trigger) as u16,
+        gamepad_rz: lerp( 0f32, TRIGGER_MAX_VALUE, controller_state.right_trigger) as u16,
         btn_gamepad_bt_1: if controller_state.a {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090001: Button 1 Primary/trigger, Value = 0 to 0
+        },
         btn_gamepad_bt_2: if controller_state.b {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090002: Button 2 Secondary, Value = 0 to 0
+        },
         btn_gamepad_bt_3: if controller_state.x {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090003: Button 3 Tertiary, Value = 0 to 0
+        },
         btn_gamepad_bt_4: if controller_state.y {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090004: Button 4, Value = 0 to 0
+        },
         btn_gamepad_bt_5: if controller_state.left_shoulder {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090005: Button 5, Value = 0 to 0
+        },
         btn_gamepad_bt_6: if controller_state.right_shoulder {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090006: Button 6, Value = 0 to 0
+        },
         btn_gamepad_bt_7: if controller_state.start {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090007: Button 7, Value = 0 to 0
+        },
         btn_gamepad_bt_8: if controller_state.back {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090008: Button 8, Value = 0 to 0
+        },
         btn_gamepad_bt_9: if controller_state.left_thumb {
             1.into()
         } else {
             0.into()
-        }, // : 1,                     // Usage 0x00090009: Button 9, Value = 0 to 0
+        },
         btn_gamepad_bt_10: if controller_state.right_thumb {
             1.into()
         } else {
             0.into()
-        }, // : 1,                    // Usage 0x0009000A: Button 10, Value = 0 to 0
-        //unknown2, //: 6,                                // Pad
-        btn_gamepad_hat_switch: 0, // : 4,                    // Usage 0x00010039: Hat switch, Value = 1 to 8, Physical = (Value - 1) x 45 in degrees
-        //unknown3, //: 4,                                // Pad
-        btn_gamepad_main_system_menu: 0, // : 1,  // Usage 0x00010085: System Main Menu, Value = 0 to 1
-        //unknown4, //: 7,                                // Pad
-        gamead_battery_strength: 255u8, // : 8,             // Usage 0x00060020: Battery Strength, Value = 0 to 255
+        },
+        btn_gamepad_hat_switch: 0,
+        btn_gamepad_main_system_menu: 0,
+        gamead_battery_strength: 255u8,
         pad0: 0.into(),
     }
 }
