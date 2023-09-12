@@ -220,10 +220,28 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
             .device()
             .write_report(&get_report(&controller_state))
         {
-            Err(UsbHidError::WouldBlock) => {}
-            Ok(_) => {}
-            Err(e) => {
-                core::panic!("Failed to write joystick report: {:?}", e)
+            Ok(_) => {
+                app.leds[1].on().ok();
+            }
+            Err(UsbHidError::WouldBlock) => {
+                app.leds[2].on().ok();
+            }
+            Err(UsbHidError::SerializationError) => {
+                app.leds[3].on().ok();
+            }
+            Err(UsbHidError::Duplicate) => {
+                app.leds[3].on().ok();
+            }
+            Err(UsbHidError::UsbError(a)) => {
+                match a {
+                    UsbError::BufferOverflow => {
+                        app.leds[6].on().ok(); 
+                    }
+                    _ => {
+                        app.leds[5].on().ok(); 
+                    }
+                }
+                app.leds[6].on().ok();
             }
         }
 
@@ -231,16 +249,16 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
     }
 
     // To debug ADC
-    let value = controller_state.left_thumb_x;
-    let leds_max_index = 7;
-    for curr in 0..=leds_max_index {
-        let current = (curr as f32) / leds_max_index as f32;
-        if value >= current {
-            app.leds[curr].on().ok();
-        } else {
-            app.leds[curr].off().ok();
-        }
-    }
+    // let value = controller_state.left_thumb_x;
+    // let leds_max_index = 7;
+    // for curr in 0..=leds_max_index {
+    //     let current = (curr as f32) / leds_max_index as f32;
+    //     if value >= current {
+    //         app.leds[curr].on().ok();
+    //     } else {
+    //         app.leds[curr].off().ok();
+    //     }
+    // }
 
     if !app.usb_device.poll(&mut [&mut app.usb_joy]) {
         app.leds[0].on().ok();
@@ -301,66 +319,107 @@ fn lerp(from: f32, to: f32, value: f32) -> f32 {
 }
 
 fn get_report(controller_state: &ControllerState) -> XboxJoystickReport {
+    let mut buttons = 0;
+
+    let mut buttonIndex = 0;
+
+    if !controller_state.a {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    if !controller_state.b {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    if !controller_state.x {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    if !controller_state.y {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    if !controller_state.left_shoulder {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    if !controller_state.right_shoulder {
+        buttons |= 1 << buttonIndex;
+    }
+    buttonIndex += 1;
+
+    let x = (controller_state.left_thumb_x * 127f32) as i8;
+
+    let y = (controller_state.left_thumb_y * 127f32) as i8;
+
     XboxJoystickReport {
-        gamepad_x: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_x) as u16,
-        gamepad_y: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_y) as u16,
-        gamepad_rx: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_x) as u16,
-        gamepad_ry: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_y) as u16,
-        gamepad_z: lerp(0f32, TRIGGER_MAX_VALUE, controller_state.left_trigger) as u16,
-        gamepad_rz: lerp( 0f32, TRIGGER_MAX_VALUE, controller_state.right_trigger) as u16,
-        btn_gamepad_bt_1: if controller_state.a {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_2: if controller_state.b {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_3: if controller_state.x {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_4: if controller_state.y {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_5: if controller_state.left_shoulder {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_6: if controller_state.right_shoulder {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_7: if controller_state.start {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_8: if controller_state.back {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_9: if controller_state.left_thumb {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_bt_10: if controller_state.right_thumb {
-            1.into()
-        } else {
-            0.into()
-        },
-        btn_gamepad_hat_switch: 0,
-        btn_gamepad_main_system_menu: 0,
-        gamead_battery_strength: 255u8,
-        pad0: 0.into(),
+        buttons,
+        x,
+        y
+        // gamepad_x: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_x) as u16,
+        // gamepad_y: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.left_thumb_y) as u16,
+        // gamepad_rx: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_x) as u16,
+        // gamepad_ry: lerp(0f32, JOYSTICK_MAX_VALUE, controller_state.right_thumb_y) as u16,
+        // gamepad_z: lerp(0f32, TRIGGER_MAX_VALUE, controller_state.left_trigger) as u16,
+        // gamepad_rz: lerp( 0f32, TRIGGER_MAX_VALUE, controller_state.right_trigger) as u16,
+        // btn_gamepad_bt_1: if controller_state.a {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_2: if controller_state.b {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_3: if controller_state.x {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_4: if controller_state.y {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_5: if controller_state.left_shoulder {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_6: if controller_state.right_shoulder {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_7: if controller_state.start {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_8: if controller_state.back {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_9: if controller_state.left_thumb {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_bt_10: if controller_state.right_thumb {
+        //     1.into()
+        // } else {
+        //     0.into()
+        // },
+        // btn_gamepad_hat_switch: 0,
+        // btn_gamepad_main_system_menu: 0,
+        // gamead_battery_strength: 255u8,
+        // pad0: 0.into(),
     }
 }
