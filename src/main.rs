@@ -1,8 +1,12 @@
 #![deny(unsafe_code)]
 #![no_main]
 #![no_std]
+extern crate packed_struct;
+#[macro_use]
+extern crate packed_struct_codegen;
 
 use controller::ControllerState;
+use hid_report::{XboxJoystickReport, XboxJoystickConfig, XboxJoystick};
 pub use panic_itm; // panic handler
 
 pub use cortex_m_rt::entry;
@@ -30,11 +34,11 @@ use source::init::*;
 use switch_hal::OutputSwitch;
 use usb_device::{class_prelude::*, prelude::*};
 use usbd_human_interface_device::{
-    device::{joystick::JoystickReport, DeviceHList},
     usb_class::*,
     *,
 };
 
+mod hid_report;
 mod controller;
 
 type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
@@ -84,7 +88,7 @@ struct App<'a> {
             >,
         >,
         frunk_core::hlist::HCons<
-            usbd_human_interface_device::device::joystick::Joystick<
+            XboxJoystick<
                 'a,
                 stm32_usbd::UsbBus<
                     Peripheral<
@@ -187,7 +191,7 @@ fn main() -> ! {
     let usb_bus: UsbBusAllocator<_> = UsbBus::new(usb_peripheral);
 
     let usb_joy = UsbHidClassBuilder::new()
-        .add_device(usbd_human_interface_device::device::joystick::JoystickConfig::default())
+        .add_device(XboxJoystickConfig::default())
         .build(&usb_bus);
 
     let usb_device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
@@ -332,7 +336,7 @@ fn lerp(from: f32, to: f32, value: f32) -> f32 {
     return from * (1.0f32 - value) + to * value;
 }
 
-fn get_report(controller_state: &ControllerState) -> JoystickReport {
+fn get_report(controller_state: &ControllerState) -> XboxJoystickReport {
     // TODO: complete me
     let mut buttons = 0;
 
@@ -371,5 +375,31 @@ fn get_report(controller_state: &ControllerState) -> JoystickReport {
     let x = (controller_state.left_thumb_x * 127f32) as i8;
 
     let y = (controller_state.left_thumb_y * 127f32) as i8;
-    JoystickReport { x, y, buttons }
+    XboxJoystickReport {   
+        GD_GamePadX: lerp(controller_state.left_thumb_x, 0f32, 65535f32) as u16, // : 16,                          // Usage 0x00010030: X, Value = 0 to 65535
+        GD_GamePadY: lerp(controller_state.left_thumb_y, 0f32, 65535f32) as u16, // : 16,                          // Usage 0x00010031: Y, Value = 0 to 65535
+        GD_GamePadRx: lerp(controller_state.right_thumb_x, 0f32, 65535f32) as u16, // : 16,                         // Usage 0x00010033: Rx, Value = 0 to 65535
+        GD_GamePadRy: lerp(controller_state.right_thumb_y, 0f32, 65535f32) as u16, // : 16,                         // Usage 0x00010034: Ry, Value = 0 to 65535
+        GD_GamePadZ: lerp(controller_state.left_trigger, 0f32, 1023f32) as u16, // : 10,                          // Usage 0x00010032: Z, Value = 0 to 1023
+        //unknown0, //: 6,                                // Pad
+        GD_GamePadRz: lerp(controller_state.right_trigger, 0f32, 1023f32) as u16, // : 10,                         // Usage 0x00010035: Rz, Value = 0 to 1023
+        // unknown1, //: 6,                                // Pad
+        BTN_GamePadButton1: if controller_state.a { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090001: Button 1 Primary/trigger, Value = 0 to 0
+        BTN_GamePadButton2: if controller_state.b { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090002: Button 2 Secondary, Value = 0 to 0
+        BTN_GamePadButton3: if controller_state.x { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090003: Button 3 Tertiary, Value = 0 to 0
+        BTN_GamePadButton4: if controller_state.y { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090004: Button 4, Value = 0 to 0
+        BTN_GamePadButton5: if controller_state.left_shoulder { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090005: Button 5, Value = 0 to 0
+        BTN_GamePadButton6: if controller_state.right_shoulder { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090006: Button 6, Value = 0 to 0
+        BTN_GamePadButton7: if controller_state.start { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090007: Button 7, Value = 0 to 0
+        BTN_GamePadButton8: if controller_state.back { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090008: Button 8, Value = 0 to 0
+        BTN_GamePadButton9: if controller_state.left_thumb { 1.into() } else { 0.into() }, // : 1,                     // Usage 0x00090009: Button 9, Value = 0 to 0
+        BTN_GamePadButton10: if controller_state.right_thumb { 1.into() } else { 0.into() }, // : 1,                    // Usage 0x0009000A: Button 10, Value = 0 to 0
+        //unknown2, //: 6,                                // Pad
+        GD_GamePadHatSwitch: 0, // : 4,                    // Usage 0x00010039: Hat switch, Value = 1 to 8, Physical = (Value - 1) x 45 in degrees
+        //unknown3, //: 4,                                // Pad
+        GD_GamePadSystemControlSystemMainMenu: 0, // : 1,  // Usage 0x00010085: System Main Menu, Value = 0 to 1
+        //unknown4, //: 7,                                // Pad
+        GEN_GamePadBatteryStrength: 255u8, // : 8,             // Usage 0x00060020: Battery Strength, Value = 0 to 255
+        pad0: 0.into(),
+    }
 }
