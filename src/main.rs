@@ -38,10 +38,8 @@ mod hid_report;
 
 type UsbDevType<'a> = UsbDevice<'a, UsbBus<UsbPeriph>>;
 
-type DmPin = stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<11>, Alternate<PushPull, 14>>;
-
-type DpPin = stm32f3xx_hal::gpio::Pin<Gpioa, stm32f3xx_hal::gpio::U<12>, Alternate<PushPull, 14>>;
-
+type DmPin = Pin<Gpioa, U<11>, Alternate<PushPull, 14>>;
+type DpPin = Pin<Gpioa, U<12>, Alternate<PushPull, 14>>;
 type UsbBusType = stm32_usbd::UsbBus<Peripheral<DmPin, DpPin>>;
 
 struct App<'a> {
