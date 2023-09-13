@@ -170,7 +170,7 @@ fn main() -> ! {
         //.device_class(USB_CLASS_CDC)
         .build();
 
-    leds[0].off().ok();
+    //leds[0].off().ok();
 
     let mut controller_state = ControllerState::new();
     let mut nb_iter = 0u64;
@@ -220,51 +220,52 @@ fn run_main_loop_iter(nb_iter: &mut u64, controller_state: &mut ControllerState,
             .device()
             .write_report(&get_report(&controller_state))
         {
-            Ok(_) => {
-                app.leds[1].on().ok();
-            }
-            Err(UsbHidError::WouldBlock) => {
-                app.leds[2].on().ok();
-            }
-            Err(UsbHidError::SerializationError) => {
-                app.leds[3].on().ok();
-            }
-            Err(UsbHidError::Duplicate) => {
-                app.leds[3].on().ok();
-            }
-            Err(UsbHidError::UsbError(a)) => {
-                match a {
-                    UsbError::BufferOverflow => {
-                        app.leds[6].on().ok(); 
-                    }
-                    _ => {
-                        app.leds[5].on().ok(); 
-                    }
-                }
-                app.leds[6].on().ok();
-            }
+            // Ok(_) => {
+            //     app.leds[1].on().ok();
+            // }
+            // Err(UsbHidError::WouldBlock) => {
+            //     app.leds[2].on().ok();
+            // }
+            // Err(UsbHidError::SerializationError) => {
+            //     app.leds[3].on().ok();
+            // }
+            // Err(UsbHidError::Duplicate) => {
+            //     app.leds[3].on().ok();
+            // }
+            // Err(UsbHidError::UsbError(a)) => {
+            //     match a {
+            //         UsbError::BufferOverflow => {
+            //             app.leds[6].on().ok(); 
+            //         }
+            //         _ => {
+            //             app.leds[5].on().ok(); 
+            //         }
+            //     }
+            //     app.leds[6].on().ok();
+            // }
+            _ => { }
         }
 
         app.delay.delay_us(100u32);
     }
 
     // To debug ADC
-    // let value = controller_state.left_thumb_x;
-    // let leds_max_index = 7;
-    // for curr in 0..=leds_max_index {
-    //     let current = (curr as f32) / leds_max_index as f32;
-    //     if value >= current {
-    //         app.leds[curr].on().ok();
-    //     } else {
-    //         app.leds[curr].off().ok();
-    //     }
-    // }
+    let value = controller_state.left_thumb_x / 2f32 + 0.5f32;
+    let leds_max_index = 7;
+    for curr in 0..=leds_max_index {
+        let current = (curr as f32) / leds_max_index as f32;
+        if value > current + 0.01f32 {
+            app.leds[curr].on().ok();
+        } else {
+            app.leds[curr].off().ok();
+        }
+    }
 
     if !app.usb_device.poll(&mut [&mut app.usb_joy]) {
-        app.leds[0].on().ok();
+        //app.leds[0].on().ok();
         return;
     } else {
-        app.leds[0].on().ok();
+        //app.leds[0].on().ok();
     }
 }
 
