@@ -9,6 +9,8 @@ use packed_struct::prelude::*;
 // from https://github.com/nefarius/ViGEmBus/issues/40
 // see https://github.com/dlkj/usbd-human-interface-device/blob/main/src/device/joystick.rs
 // see https://github.com/TimDeve/sunrs/blob/0d335dffa3ebe8909a0308639af4bb66dccee902/src/main.rs
+// see https://usb.org/sites/default/files/hut1_2.pdf
+// see http://who-t.blogspot.com/2018/12/understanding-hid-report-descriptors.html
 
 #[rustfmt::skip]
 pub const XBOX_JOYSTICK_DESCRIPTOR: &[u8] = &[
@@ -19,10 +21,14 @@ pub const XBOX_JOYSTICK_DESCRIPTOR: &[u8] = &[
     0xa1, 0x00, //   Collection (Physical)              161, 0
     0x09, 0x30, //     Usage (X)                        9,   48
     0x09, 0x31, //     Usage (Y)                        9,   49
+    0x09, 0x32, //     Usage (Z)                        9,   50
+    0x09, 0x33, //     Usage (Rx)                       9,   51
+    0x09, 0x34, //     Usage (Ry)                       9,   52
+    0x09, 0x35, //     Usage (Rz)                       9,   53
     0x15, 0x81, //     Logical Minimum (-127)           21,  129
     0x25, 0x7f, //     Logical Maximum (127)            37,  127
     0x75, 0x08, //     Report Size (8)                  117, 8
-    0x95, 0x02, //     Report count (2)                 149, 2,
+    0x95, 0x06, //     Report count (6)                 149, 6,
     0x81, 0x02, //     Input (Data, Variable, Absolute) 129, 2,
     0xc0,       //   End Collection                     192,
     0x05, 0x09, //   Usage Page (Button)                5,   9,
@@ -31,20 +37,28 @@ pub const XBOX_JOYSTICK_DESCRIPTOR: &[u8] = &[
     0x15, 0x00, //   Logical Minimum (0)                21,  0
     0x25, 0x01, //   Logical Maximum (1)                37,  1,
     0x75, 0x01, //   Report Size (1)                    117, 1,
-    0x95, 0x08, //   Report Count (8)                   149, 8
+    0x95, 0x08, //   Report Count (16)                  149, 8
     0x81, 0x02, //   Input (Data, Variable, Absolute)   129, 2,
     0xc0,       // End Collection                       192
 ];
 
 #[derive(Clone, Copy, Debug, Default, PackedStruct)]
-#[packed_struct(endian = "lsb", size_bytes="3")]
+#[packed_struct(endian = "lsb", size_bytes="8")]
 pub struct XboxJoystickReport {
     #[packed_field]
     pub x: i8,
     #[packed_field]
     pub y: i8,
     #[packed_field]
-    pub buttons: u8,
+    pub z: i8,
+    #[packed_field]
+    pub rx: i8,
+    #[packed_field]
+    pub ry: i8,
+    #[packed_field]
+    pub rz: i8,
+    #[packed_field]
+    pub buttons: u16,
 }
 
 pub struct XboxJoystick<'a, B: UsbBus> {
@@ -54,7 +68,6 @@ pub struct XboxJoystick<'a, B: UsbBus> {
 impl<'a, B: UsbBus> XboxJoystick<'a, B> {
     pub fn write_report(&mut self, report: &XboxJoystickReport) -> Result<(), UsbHidError> {
         let data = report.pack();
-        //let data : [u8; 12] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         self.interface
             .write_report(&data)
             .map(|_| ())
