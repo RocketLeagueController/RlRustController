@@ -289,29 +289,29 @@ fn read_joystick_states(app: &mut App, controller_state: &mut ControllerState) {
     controller_state.right_thumb_y = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc4.read(&mut app.pb12_pin);
-    controller_state.left_trigger = read_adc_value(val);
+    controller_state.left_trigger = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc3.read(&mut app.pd13_pin);
-    controller_state.right_trigger = read_adc_value(val);
+    controller_state.right_trigger = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc4.read(&mut app.pd14_pin);
-    controller_state.other_value_0 = read_adc_value(val);
+    controller_state.other_value_0 = lerp(-1f32, 1f32, read_adc_value(val));
 
     let val = app.adc4.read(&mut app.pb15_pin);
-    controller_state.other_value_1 = read_adc_value(val);
+    controller_state.other_value_1 = lerp(-1f32, 1f32, read_adc_value(val));
 }
 
 fn read_buttons_states(app: &mut App, controller_state: &mut ControllerState) {
-    controller_state.a = app.button_d3.is_high().unwrap();
-    controller_state.b = app.button_d4.is_high().unwrap();
-    controller_state.x = app.button_d5.is_high().unwrap();
-    controller_state.y = app.button_d6.is_high().unwrap();
-    controller_state.left_shoulder = app.button_d1.is_high().unwrap();
-    controller_state.right_shoulder = app.button_d7.is_high().unwrap();
-    controller_state.left_thumb = app.button_d0.is_high().unwrap();
-    controller_state.right_thumb = app.button_d2.is_high().unwrap();
-    controller_state.start = app.button_b4.is_high().unwrap();
-    controller_state.back = app.button_b5.is_high().unwrap();
+    controller_state.a = app.button_d3.is_low().unwrap();
+    controller_state.b = app.button_d4.is_low().unwrap();
+    controller_state.x = app.button_d5.is_low().unwrap();
+    controller_state.y = app.button_d6.is_low().unwrap();
+    controller_state.left_shoulder = app.button_d1.is_low().unwrap();
+    controller_state.right_shoulder = app.button_d7.is_low().unwrap();
+    controller_state.left_thumb = app.button_d0.is_low().unwrap();
+    controller_state.right_thumb = app.button_d2.is_low().unwrap();
+    controller_state.start = app.button_b4.is_low().unwrap();
+    controller_state.back = app.button_b5.is_low().unwrap();
 }
 
 fn lerp(from: f32, to: f32, value: f32) -> f32 {
@@ -323,72 +323,72 @@ fn get_report(controller_state: &ControllerState) -> XboxJoystickReport {
 
     let mut button_index = 0;
 
-    if !controller_state.a {
+    if controller_state.a {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.b {
+    if controller_state.b {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.x {
+    if controller_state.x {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.y {
+    if controller_state.y {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.left_shoulder {
+    if controller_state.left_shoulder {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.right_shoulder {
+    if controller_state.right_shoulder {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.up {
+    if controller_state.up {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.down {
+    if controller_state.down {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.right {
+    if controller_state.right {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.left {
+    if controller_state.left {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.start {
+    if controller_state.start {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.back {
+    if controller_state.back {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.left_thumb {
+    if controller_state.left_thumb {
         buttons |= 1 << button_index;
     }
     button_index += 1;
 
-    if !controller_state.right_thumb {
+    if controller_state.right_thumb {
         buttons |= 1 << button_index;
     }
     button_index += 1;

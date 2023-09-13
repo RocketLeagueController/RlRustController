@@ -33,11 +33,11 @@ pub const XBOX_JOYSTICK_DESCRIPTOR: &[u8] = &[
     0xc0,       //   End Collection                     192,
     0x05, 0x09, //   Usage Page (Button)                5,   9,
     0x19, 0x01, //   Usage Minimum (0)                  25,  1,
-    0x29, 0x08, //   Usage Maximum (8)                  41,  8,
+    0x29, 0x10, //   Usage Maximum (8)                  41,  8,
     0x15, 0x00, //   Logical Minimum (0)                21,  0
     0x25, 0x01, //   Logical Maximum (1)                37,  1,
     0x75, 0x01, //   Report Size (1)                    117, 1,
-    0x95, 0x08, //   Report Count (16)                  149, 8
+    0x95, 0x10, //   Report Count (16)                  149, 8
     0x81, 0x02, //   Input (Data, Variable, Absolute)   129, 2,
     0xc0,       // End Collection                       192
 ];
